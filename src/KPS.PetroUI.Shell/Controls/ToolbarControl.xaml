@@ -1,0 +1,33 @@
+<UserControl x:Class="KPS.PetroUI.Shell.Controls.ToolbarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d">
+    <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+            BorderThickness="0,0,0,1"
+            Background="{DynamicResource MaterialDesignPaper}">
+        <ToolBarTray>
+            <ToolBar Style="{StaticResource MaterialDesignToolBar}">
+                <Button ToolTip="Refresh">
+                    <materialDesign:PackIcon Kind="Refresh" />
+                </Button>
+                <Separator/>
+                <Button ToolTip="Save">
+                    <materialDesign:PackIcon Kind="ContentSave" />
+                </Button>
+                <Button ToolTip="Print">
+                    <materialDesign:PackIcon Kind="Printer" />
+                </Button>
+                <Separator/>
+                <Button ToolTip="Export to Excel">
+                    <materialDesign:PackIcon Kind="FileExcel" />
+                </Button>
+                <Button ToolTip="Export to PDF">
+                    <materialDesign:PackIcon Kind="FilePdfBox" />
+                </Button>
+            </ToolBar>
+        </ToolBarTray>
+    </Border>
+</UserControl>

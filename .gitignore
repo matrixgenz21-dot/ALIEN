@@ -1,0 +1,48 @@
+## .NET / Visual Studio
+bin/
+obj/
+out/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+.vs/
+.vscode/
+*.swp
+*~
+*.log
+logs/
+
+## Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+## Package artifacts
+*.nupkg
+*.snupkg
+packages/
+
+## Build artifacts
+publish/
+TestResults/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.dll.old
+
+## Secrets / config
+*.pfx
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
+.env
+.env.*
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Reports
+*.frx.bak
