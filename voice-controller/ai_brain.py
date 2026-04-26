@@ -1,7 +1,7 @@
 """
 Voice Controller - AI Brain (Groq API)
 Kuch bhi bolo, AI samajh ke sahi action execute karega.
-Natural language ko computer commands mein translate karta hai.
+Multi-step tasks support — insaan ki tarha step by step kaam karega.
 """
 
 import json
@@ -14,117 +14,183 @@ except ImportError:
 
 from config import GROQ_API_KEY, GROQ_MODEL
 
-SYSTEM_PROMPT = """You are a voice-controlled computer assistant. The user speaks commands in ANY language (English, Urdu, Hindi, Roman Urdu, or mixed). Your job is to understand their intent and return a JSON action.
+SYSTEM_PROMPT = """You are a voice-controlled computer assistant that works like a human. The user speaks commands in ANY language (English, Urdu, Hindi, Roman Urdu, or mixed). Your job is to understand their intent and return a JSON with a list of steps to execute.
 
-Available actions you can return:
+IMPORTANT: You must return a "steps" array. Each step is executed one by one with delays, so the user can see mouse moving and keyboard typing like a real human.
+
+Available step types:
 
 MOUSE:
-- {"action": "mouse", "command": "move_up"} — move mouse up
-- {"action": "mouse", "command": "move_down"} — move mouse down
-- {"action": "mouse", "command": "move_left"} — move mouse left
-- {"action": "mouse", "command": "move_right"} — move mouse right
-- {"action": "mouse", "command": "fast_move_up"} — move mouse up fast
-- {"action": "mouse", "command": "fast_move_down"} — move mouse down fast
-- {"action": "mouse", "command": "fast_move_left"} — move mouse left fast
-- {"action": "mouse", "command": "fast_move_right"} — move mouse right fast
-- {"action": "mouse", "command": "left_click"} — left click
-- {"action": "mouse", "command": "right_click"} — right click
-- {"action": "mouse", "command": "double_click"} — double click
-- {"action": "mouse", "command": "scroll_up"} — scroll up
-- {"action": "mouse", "command": "scroll_down"} — scroll down
-- {"action": "mouse", "command": "center_mouse"} — center mouse on screen
-- {"action": "mouse", "command": "start_drag"} — start dragging
-- {"action": "mouse", "command": "stop_drag"} — stop dragging
+- {"step": "mouse", "command": "move_up"}
+- {"step": "mouse", "command": "move_down"}
+- {"step": "mouse", "command": "move_left"}
+- {"step": "mouse", "command": "move_right"}
+- {"step": "mouse", "command": "fast_move_up"}
+- {"step": "mouse", "command": "fast_move_down"}
+- {"step": "mouse", "command": "fast_move_left"}
+- {"step": "mouse", "command": "fast_move_right"}
+- {"step": "mouse", "command": "left_click"}
+- {"step": "mouse", "command": "right_click"}
+- {"step": "mouse", "command": "double_click"}
+- {"step": "mouse", "command": "scroll_up"}
+- {"step": "mouse", "command": "scroll_down"}
+- {"step": "mouse", "command": "center_mouse"}
 
 KEYBOARD:
-- {"action": "keyboard", "command": "enter"} — press Enter
-- {"action": "keyboard", "command": "escape"} — press Escape
-- {"action": "keyboard", "command": "tab"} — press Tab
-- {"action": "keyboard", "command": "space"} — press Space
-- {"action": "keyboard", "command": "backspace"} — press Backspace
-- {"action": "keyboard", "command": "delete"} — press Delete
-- {"action": "keyboard", "command": "up"} — press Up arrow
-- {"action": "keyboard", "command": "down"} — press Down arrow
-- {"action": "keyboard", "command": "left"} — press Left arrow
-- {"action": "keyboard", "command": "right"} — press Right arrow
-- {"action": "keyboard", "command": "f5"} — press F5 (refresh)
-- {"action": "keyboard", "command": "f11"} — press F11 (fullscreen)
+- {"step": "keyboard", "command": "enter"}
+- {"step": "keyboard", "command": "escape"}
+- {"step": "keyboard", "command": "tab"}
+- {"step": "keyboard", "command": "space"}
+- {"step": "keyboard", "command": "backspace"}
+- {"step": "keyboard", "command": "delete"}
+- {"step": "keyboard", "command": "up"}
+- {"step": "keyboard", "command": "down"}
+- {"step": "keyboard", "command": "left"}
+- {"step": "keyboard", "command": "right"}
 
-TYPE TEXT:
-- {"action": "type", "text": "whatever text to type"} — type any text
+TYPE TEXT (types slowly like a human):
+- {"step": "type", "text": "whatever text to type"}
 
 SHORTCUTS:
-- {"action": "shortcut", "keys": ["ctrl", "c"]} — copy
-- {"action": "shortcut", "keys": ["ctrl", "v"]} — paste
-- {"action": "shortcut", "keys": ["ctrl", "x"]} — cut
-- {"action": "shortcut", "keys": ["ctrl", "z"]} — undo
-- {"action": "shortcut", "keys": ["ctrl", "y"]} — redo
-- {"action": "shortcut", "keys": ["ctrl", "a"]} — select all
-- {"action": "shortcut", "keys": ["ctrl", "s"]} — save
-- {"action": "shortcut", "keys": ["ctrl", "f"]} — find
-- {"action": "shortcut", "keys": ["ctrl", "t"]} — new tab
-- {"action": "shortcut", "keys": ["ctrl", "w"]} — close tab
-- {"action": "shortcut", "keys": ["alt", "f4"]} — close window
-- {"action": "shortcut", "keys": ["alt", "tab"]} — switch window
-- {"action": "shortcut", "keys": ["win", "d"]} — show desktop
-- {"action": "shortcut", "keys": ["win", "l"]} — lock screen
-- {"action": "shortcut", "keys": ["win", "shift", "s"]} — screenshot
-- {"action": "shortcut", "keys": ["ctrl", "shift", "escape"]} — task manager
-- You can also create any key combination as needed.
+- {"step": "shortcut", "keys": ["ctrl", "c"]}
+- {"step": "shortcut", "keys": ["ctrl", "v"]}
+- {"step": "shortcut", "keys": ["ctrl", "x"]}
+- {"step": "shortcut", "keys": ["ctrl", "z"]}
+- {"step": "shortcut", "keys": ["ctrl", "a"]}
+- {"step": "shortcut", "keys": ["ctrl", "s"]}
+- {"step": "shortcut", "keys": ["ctrl", "t"]}
+- {"step": "shortcut", "keys": ["ctrl", "w"]}
+- {"step": "shortcut", "keys": ["alt", "f4"]}
+- {"step": "shortcut", "keys": ["alt", "tab"]}
+- Any key combination you need.
 
 MEDIA:
-- {"action": "media", "command": "play_pause"} — play or pause
-- {"action": "media", "command": "stop"} — stop
-- {"action": "media", "command": "next_track"} — next song/track
-- {"action": "media", "command": "prev_track"} — previous song/track
-- {"action": "media", "command": "volume_up"} — volume up
-- {"action": "media", "command": "volume_down"} — volume down
-- {"action": "media", "command": "mute"} — mute/unmute
+- {"step": "media", "command": "play_pause"}
+- {"step": "media", "command": "volume_up"}
+- {"step": "media", "command": "volume_down"}
+- {"step": "media", "command": "mute"}
+- {"step": "media", "command": "next_track"}
+- {"step": "media", "command": "prev_track"}
 
 OPEN APP:
-- {"action": "open", "app": "notepad"} — open Notepad
-- {"action": "open", "app": "chrome"} — open Chrome
-- {"action": "open", "app": "calculator"} — open Calculator
-- {"action": "open", "app": "paint"} — open Paint
-- {"action": "open", "app": "explorer"} — open File Explorer
-- {"action": "open", "app": "cmd"} — open Command Prompt
-- {"action": "open", "app": "any_app_name"} — open any app
+- {"step": "open", "app": "notepad"}
+- {"step": "open", "app": "chrome"}
+- {"step": "open", "app": "excel"}
+- {"step": "open", "app": "calculator"}
+- {"step": "open", "app": "paint"}
+- {"step": "open", "app": "cmd"}
+- etc.
 
 OPEN WEBSITE:
-- {"action": "website", "url": "youtube.com"} — open a website
+- {"step": "website", "url": "youtube.com"}
+
+WAIT (pause between steps so apps can load):
+- {"step": "wait", "seconds": 2}
+
+SPEAK (bot says something):
+- {"step": "speak", "text": "Main ye kar raha hoon..."}
 
 SYSTEM:
-- {"action": "system", "command": "exit_app"} — quit the voice controller
-- {"action": "system", "command": "show_help"} — show help
-- {"action": "system", "command": "show_status"} — show status
-- {"action": "system", "command": "pause_listening"} — stop listening
-- {"action": "system", "command": "resume_listening"} — start listening
+- {"step": "system", "command": "exit_app"}
+- {"step": "system", "command": "show_help"}
 
-REPEAT:
-- {"action": "repeat", "times": 5, "inner": {"action": "mouse", "command": "scroll_down"}} — repeat any action N times
+CHAT (when user is just talking):
+- {"step": "chat", "reply": "your reply"}
 
-CONVERSATION (when user is just talking, not giving a command):
-- {"action": "chat", "reply": "your friendly reply in the same language"} — reply conversationally
+RESPONSE FORMAT:
+Always return: {"steps": [...array of steps...]}
+
+EXAMPLES:
+
+User: "google pe lahore ka weather check kro"
+Response: {"steps": [
+    {"step": "open", "app": "chrome"},
+    {"step": "wait", "seconds": 3},
+    {"step": "shortcut", "keys": ["ctrl", "l"]},
+    {"step": "wait", "seconds": 0.5},
+    {"step": "type", "text": "lahore weather"},
+    {"step": "keyboard", "command": "enter"}
+]}
+
+User: "excel mein accounts ka format banao"
+Response: {"steps": [
+    {"step": "open", "app": "excel"},
+    {"step": "wait", "seconds": 4},
+    {"step": "speak", "text": "Excel khul gaya, ab format bana raha hoon"},
+    {"step": "type", "text": "Date"},
+    {"step": "keyboard", "command": "tab"},
+    {"step": "type", "text": "Description"},
+    {"step": "keyboard", "command": "tab"},
+    {"step": "type", "text": "Debit"},
+    {"step": "keyboard", "command": "tab"},
+    {"step": "type", "text": "Credit"},
+    {"step": "keyboard", "command": "tab"},
+    {"step": "type", "text": "Balance"},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "speak", "text": "Accounts format ban gaya hai"}
+]}
+
+User: "youtube pe funny videos search kro"
+Response: {"steps": [
+    {"step": "open", "app": "chrome"},
+    {"step": "wait", "seconds": 3},
+    {"step": "shortcut", "keys": ["ctrl", "l"]},
+    {"step": "wait", "seconds": 0.5},
+    {"step": "type", "text": "youtube.com"},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "wait", "seconds": 3},
+    {"step": "shortcut", "keys": ["ctrl", "l"]},
+    {"step": "wait", "seconds": 0.5},
+    {"step": "type", "text": "youtube.com/results?search_query=funny+videos"},
+    {"step": "keyboard", "command": "enter"}
+]}
+
+User: "notepad mein ek letter likho"
+Response: {"steps": [
+    {"step": "open", "app": "notepad"},
+    {"step": "wait", "seconds": 2},
+    {"step": "type", "text": "Dear Sir/Madam,"},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "type", "text": "I am writing to inform you that..."},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "type", "text": "Regards,"},
+    {"step": "keyboard", "command": "enter"},
+    {"step": "type", "text": "Your Name"},
+    {"step": "speak", "text": "Letter likh diya hai notepad mein"}
+]}
+
+User: "click karo"
+Response: {"steps": [{"step": "mouse", "command": "left_click"}]}
+
+User: "volume barha do"
+Response: {"steps": [
+    {"step": "media", "command": "volume_up"},
+    {"step": "media", "command": "volume_up"},
+    {"step": "media", "command": "volume_up"}
+]}
+
+User: "kya tum mujhe sun sakte ho?"
+Response: {"steps": [{"step": "chat", "reply": "Haan! Main sun raha hoon. Bolo kya karna hai?"}]}
 
 RULES:
-1. ALWAYS return valid JSON only. No extra text.
+1. ALWAYS return valid JSON with a "steps" array. No extra text.
 2. Understand commands in ANY language — English, Urdu, Hindi, Roman Urdu, mixed.
-3. If the user is clearly giving a computer command, return the appropriate action.
-4. If the user is just chatting/talking (not a command), return a chat action with a friendly short reply.
-5. Be smart about understanding intent. For example:
-   - "upar le jao" = move mouse up
-   - "ye band karo" = close window (Alt+F4)
-   - "awaaz barha do" = volume up
-   - "likh do hello" = type "hello"
-   - "agla gaana" = next track
-   - "chrome kholo" = open chrome
-   - "kya tum mujhe sun sakte ho" = chat (user is just asking)
-6. For repeat commands like "5 baar upar" return a repeat action.
+3. For complex tasks, break them into multiple steps like a human would do.
+4. Add "wait" steps after opening apps (2-4 seconds) so the app has time to load.
+5. Use "speak" steps to tell the user what you're doing during long tasks.
+6. For typing tasks, type the actual content — don't just say you'll do it.
+7. When user says to search something on Google/YouTube, actually navigate there and type the search.
+8. When user says to create something in Excel/Word/Notepad, actually type the content.
+9. Be creative and helpful — do the FULL task, not just part of it.
+10. For simple commands (click, scroll, volume), just return 1 step.
+11. For chat/conversation, return a chat step with a friendly reply in the same language.
 """
 
 
 class AIBrain:
-    """Groq AI se natural language samajh ke action decide karo."""
+    """Groq AI se natural language samajh ke multi-step actions decide karo."""
 
     def __init__(self):
         self._client = None
@@ -150,9 +216,9 @@ class AIBrain:
 
     def understand(self, text):
         """
-        Natural language text ko samajh ke action dict return karo.
+        Natural language text ko samajh ke steps list return karo.
 
-        Returns: dict with action details, or None on failure.
+        Returns: dict with "steps" array, or None on failure.
         """
         if not self.enabled or not self._client:
             return None
@@ -165,14 +231,24 @@ class AIBrain:
                     {"role": "user", "content": text},
                 ],
                 temperature=0.1,
-                max_tokens=256,
+                max_tokens=1024,
                 response_format={"type": "json_object"},
             )
 
             result_text = response.choices[0].message.content.strip()
             result = json.loads(result_text)
 
-            print(f"[AIBrain] Understood: {text} -> {result}")
+            steps = result.get("steps", [])
+            if not steps:
+                if "action" in result:
+                    steps = [result]
+                    result = {"steps": steps}
+
+            step_count = len(steps)
+            print(f"[AIBrain] Understood: {text} -> {step_count} step(s)")
+            for i, s in enumerate(steps):
+                print(f"  Step {i+1}: {s}")
+
             return result
 
         except json.JSONDecodeError as e:

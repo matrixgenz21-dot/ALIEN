@@ -134,93 +134,98 @@ class VoiceController:
                 logger.warning(f"Unknown command: {raw}")
 
     def _handle_ai(self, text):
-        """AI Brain se natural language samajh ke execute karo."""
+        """AI Brain se natural language samajh ke multi-step execute karo."""
         result = self.ai.understand(text)
         if not result:
             self.speaker.say("AI se baat nahi ho payi. Internet check karo.")
             return
 
-        action_type = result.get("action", "")
-        logger.info(f"AI: {text} -> {result}")
+        steps = result.get("steps", [])
+        if not steps:
+            self.speaker.say("Samajh nahi aaya, dubara bolo.")
+            return
 
-        if action_type == "mouse":
-            cmd = result.get("command", "")
-            if self.mouse.execute(cmd):
-                self.speaker.say("Done")
-            else:
-                self.speaker.say(f"Mouse action failed: {cmd}")
+        logger.info(f"AI: {text} -> {len(steps)} steps")
 
-        elif action_type == "keyboard":
-            cmd = result.get("command", "")
+        total = len(steps)
+        if total > 1:
+            self.speaker.say(f"Ok, {total} steps mein kar raha hoon...")
+            time.sleep(0.5)
+
+        for i, step in enumerate(steps):
+            if not self.running:
+                break
+            self._execute_step(step, i + 1, total)
+            if i < total - 1:
+                time.sleep(0.3)
+
+        if total > 1:
+            print(f"[AIBrain] All {total} steps done.")
+
+    def _execute_step(self, step, num, total):
+        """Ek step execute karo."""
+        step_type = step.get("step", step.get("action", ""))
+
+        if step_type == "mouse":
+            cmd = step.get("command", "")
+            self.mouse.execute(cmd)
+            print(f"  [{num}/{total}] Mouse: {cmd}")
+
+        elif step_type == "keyboard":
+            cmd = step.get("command", "")
             self.keyboard.press_key(cmd)
-            self.speaker.say(f"Pressed {cmd}")
+            print(f"  [{num}/{total}] Key: {cmd}")
 
-        elif action_type == "type":
-            text_to_type = result.get("text", "")
-            if text_to_type:
-                self.keyboard.type_text(text_to_type)
-                self.speaker.say(f"Typed: {text_to_type}")
+        elif step_type == "type":
+            text = step.get("text", "")
+            if text:
+                self.keyboard.type_text(text)
+                print(f"  [{num}/{total}] Typed: {text}")
 
-        elif action_type == "shortcut":
-            keys = result.get("keys", [])
+        elif step_type == "shortcut":
+            keys = step.get("keys", [])
             if keys:
                 self.keyboard.hotkey(*keys)
-                self.speaker.say("Done")
+                print(f"  [{num}/{total}] Shortcut: {'+'.join(keys)}")
 
-        elif action_type == "media":
-            cmd = result.get("command", "")
-            if self.media.execute(cmd):
-                self.speaker.say("Done")
+        elif step_type == "media":
+            cmd = step.get("command", "")
+            self.media.execute(cmd)
+            print(f"  [{num}/{total}] Media: {cmd}")
 
-        elif action_type == "open":
-            app = result.get("app", "")
+        elif step_type == "open":
+            app = step.get("app", "")
             if app:
-                if self.apps.open_app(app):
-                    self.speaker.say(f"Opening {app}")
-                else:
-                    self.speaker.say(f"Could not open {app}")
+                self.apps.open_app(app)
+                print(f"  [{num}/{total}] Opening: {app}")
 
-        elif action_type == "website":
-            url = result.get("url", "")
+        elif step_type == "website":
+            url = step.get("url", "")
             if url:
                 self.apps.open_website(url)
-                self.speaker.say("Opening website")
+                print(f"  [{num}/{total}] Website: {url}")
 
-        elif action_type == "system":
-            cmd = result.get("command", "")
+        elif step_type == "wait":
+            seconds = min(step.get("seconds", 1), 10)
+            print(f"  [{num}/{total}] Waiting {seconds}s...")
+            time.sleep(seconds)
+
+        elif step_type == "speak":
+            text = step.get("text", "")
+            if text:
+                self.speaker.say_sync(text)
+                print(f"  [{num}/{total}] Said: {text}")
+
+        elif step_type == "system":
+            cmd = step.get("command", "")
             self._handle_system(cmd)
+            print(f"  [{num}/{total}] System: {cmd}")
 
-        elif action_type == "repeat":
-            times = min(result.get("times", 1), 50)
-            inner = result.get("inner", {})
-            self.speaker.say(f"Repeating {times} times")
-            for _ in range(times):
-                self._handle_ai_action(inner)
-                time.sleep(0.15)
-
-        elif action_type == "chat":
-            reply = result.get("reply", "")
+        elif step_type == "chat":
+            reply = step.get("reply", "")
             if reply:
                 self.speaker.say(reply)
-
-        else:
-            self.speaker.say("Samajh nahi aaya, dubara bolo.")
-
-    def _handle_ai_action(self, result):
-        """AI repeat ke andar wale action ko execute karo."""
-        if not result:
-            return
-        action_type = result.get("action", "")
-        if action_type == "mouse":
-            self.mouse.execute(result.get("command", ""))
-        elif action_type == "keyboard":
-            self.keyboard.press_key(result.get("command", ""))
-        elif action_type == "shortcut":
-            keys = result.get("keys", [])
-            if keys:
-                self.keyboard.hotkey(*keys)
-        elif action_type == "media":
-            self.media.execute(result.get("command", ""))
+                print(f"  [{num}/{total}] Chat: {reply}")
 
     def _handle_system(self, action):
         """System commands handle karo."""

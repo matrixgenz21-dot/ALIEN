@@ -27,10 +27,18 @@ class KeyboardController:
         return True
 
     def type_text(self, text):
-        """Text type karo keyboard se."""
+        """Text type karo keyboard se — insaan ki tarha slowly."""
         if not self._check():
             return
-        pyautogui.typewrite(text, interval=0.03)
+        for char in text:
+            if char.isascii() and char.isprintable():
+                pyautogui.press(char)
+            else:
+                import pyperclip
+                pyperclip.copy(char)
+                pyautogui.hotkey("ctrl", "v")
+            import time
+            time.sleep(0.05)
 
     def type_unicode(self, text):
         """Unicode text type karo (Urdu etc. ke liye)."""
