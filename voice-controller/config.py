@@ -28,6 +28,7 @@ CONTINUOUS_LISTEN = True    # Continuously listen for commands
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COMMANDS_FILE = os.path.join(BASE_DIR, "commands.json")
 LOG_FILE = os.path.join(BASE_DIR, "voice_controller.log")
+PROJECTS_DIR = os.path.join(os.path.expanduser("~"), "Desktop", "MiniDevin-Projects")
 
 # --- Built-in Command Mappings ---
 # Ye sab default commands hain - tum commands.json se apne custom commands add kar sakte ho

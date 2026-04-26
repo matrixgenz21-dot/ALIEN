@@ -16,6 +16,8 @@ from speaker import Speaker
 from voice_engine import VoiceEngine
 from command_parser import CommandParser
 from ai_brain import AIBrain
+from code_generator import CodeGenerator
+from project_builder import ProjectBuilder
 from mouse_controller import MouseController
 from keyboard_controller import KeyboardController
 from media_controller import MediaController
@@ -44,6 +46,8 @@ class VoiceController:
         self.voice = VoiceEngine()
         self.parser = CommandParser()
         self.ai = AIBrain()
+        self.codegen = CodeGenerator()
+        self.builder = ProjectBuilder()
         self.mouse = MouseController()
         self.keyboard = KeyboardController()
         self.media = MediaController()
@@ -52,9 +56,13 @@ class VoiceController:
         self.running = True
         self.paused = False
         self.use_ai = USE_AI and self.ai.enabled
+        self.last_project_dir = None
+        self.last_run_command = None
 
         if self.use_ai:
             print("\n[Mode] AI Mode ON - Kuch bhi bolo, AI samjhe ga!")
+            if self.codegen.enabled:
+                print("[Mode] Mini Devin ON - 'Calculator banao' bolo, code likh dega!")
         else:
             print("\n[Mode] Fixed Commands Mode - Sirf specific commands chalein ge.")
 
@@ -228,12 +236,152 @@ class VoiceController:
                     self.speaker.say(reply)
                     print(f"  [{num}/{total}] Chat: {reply}")
 
+            elif step_type == "code":
+                desc = step.get("description", "")
+                if desc:
+                    self._handle_code_generation(desc, num, total)
+
+            elif step_type == "improve":
+                desc = step.get("description", "")
+                if desc:
+                    self._handle_code_improve(desc, num, total)
+
+            elif step_type == "run_project":
+                self._handle_run_project(num, total)
+
             else:
                 print(f"  [{num}/{total}] Unknown step type: {step_type}")
 
         except Exception as e:
             print(f"  [{num}/{total}] ERROR in step: {e}")
             logger.error(f"Step {num} failed: {step} -> {e}")
+
+    def _handle_code_generation(self, description, num, total):
+        """AI se code generate karo aur project banao."""
+        print(f"  [{num}/{total}] Mini Devin: Generating project...")
+
+        if not self.codegen.enabled:
+            self.speaker.say("Code generator ready nahi hai. Groq API key check karo.")
+            return
+
+        result = self.codegen.generate_project(description)
+        if not result:
+            self.speaker.say("Project generate nahi ho paya. Dubara try karo.")
+            return
+
+        project_name = result.get("project_name", "project")
+        files = result.get("files", [])
+        run_command = result.get("run_command", "")
+        explanation = result.get("explanation", "")
+
+        # Build the project on disk
+        project_dir = self.builder.build_project(result)
+        if not project_dir:
+            self.speaker.say("Project files nahi ban payin.")
+            return
+
+        self.last_project_dir = project_dir
+        self.last_run_command = run_command
+
+        print(f"\n  Project: {project_name}")
+        print(f"  Files: {len(files)}")
+        print(f"  Location: {project_dir}")
+        print(f"  Run: {run_command}")
+        if explanation:
+            print(f"  Info: {explanation}")
+
+        # Open project folder
+        self.builder.open_in_explorer(project_dir)
+        time.sleep(1)
+
+        # Tell user
+        msg = f"{project_name} ban gaya hai! {len(files)} files banayi hain. Desktop pe MiniDevin-Projects folder mein dekho."
+        self.speaker.say_sync(msg)
+
+        # Auto-run if it's a GUI app or simple script
+        if run_command:
+            self.speaker.say_sync("Ab run karta hoon...")
+            if "tkinter" in str(result.get("files", "")) or "pygame" in str(result.get("files", "")):
+                self.builder.run_project_gui(project_dir, run_command)
+            else:
+                success, output = self.builder.run_project(project_dir, run_command)
+                if success:
+                    self.speaker.say_sync("Project successfully run ho gaya!")
+                else:
+                    self.speaker.say_sync("Run mein error aaya. Console mein dekho.")
+
+    def _handle_code_improve(self, description, num, total):
+        """Last project ko improve/fix karo."""
+        print(f"  [{num}/{total}] Mini Devin: Improving project...")
+
+        if not self.last_project_dir:
+            self.speaker.say("Pehle koi project banao, phir improve karo.")
+            return
+
+        if not self.codegen.enabled:
+            self.speaker.say("Code generator ready nahi hai.")
+            return
+
+        # Read current project files
+        project_files = self.builder.get_project_files(self.last_project_dir)
+        if not project_files:
+            self.speaker.say("Project files nahi mil rahin.")
+            return
+
+        result = self.codegen.improve_project(description, project_files)
+        if not result:
+            self.speaker.say("Improve nahi ho paya. Dubara try karo.")
+            return
+
+        files = result.get("files", [])
+        explanation = result.get("explanation", "")
+
+        # Update files
+        import os
+        for file_info in files:
+            fpath = file_info.get("path", "")
+            content = file_info.get("content", "")
+            if fpath and content:
+                full_path = os.path.join(self.last_project_dir, fpath)
+                parent = os.path.dirname(full_path)
+                if parent:
+                    os.makedirs(parent, exist_ok=True)
+                with open(full_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+                print(f"  Updated: {fpath}")
+
+        if explanation:
+            print(f"  Changes: {explanation}")
+
+        self.speaker.say_sync("Project update ho gaya hai!")
+
+        # Re-run
+        run_cmd = result.get("run_command", self.last_run_command)
+        if run_cmd:
+            self.last_run_command = run_cmd
+            self.speaker.say_sync("Dubara run karta hoon...")
+            if "tkinter" in str(files) or "pygame" in str(files):
+                self.builder.run_project_gui(self.last_project_dir, run_cmd)
+            else:
+                success, output = self.builder.run_project(self.last_project_dir, run_cmd)
+
+    def _handle_run_project(self, num, total):
+        """Last project dubara run karo."""
+        print(f"  [{num}/{total}] Running last project...")
+
+        if not self.last_project_dir or not self.last_run_command:
+            self.speaker.say("Pehle koi project banao, phir run karo.")
+            return
+
+        self.speaker.say_sync("Project run kar raha hoon...")
+        if "tkinter" in self.last_run_command or "pygame" in self.last_run_command:
+            self.builder.run_project_gui(self.last_project_dir, self.last_run_command)
+        else:
+            success, output = self.builder.run_project(self.last_project_dir, self.last_run_command)
+            if success:
+                self.speaker.say_sync("Run ho gaya!")
+            else:
+                self.speaker.say_sync("Error aaya. Console mein dekho.")
 
     def _handle_system(self, action):
         """System commands handle karo."""
