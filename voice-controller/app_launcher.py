@@ -6,7 +6,7 @@ Awaz se apps open aur close karo.
 import subprocess
 import os
 
-from config import APP_ALIASES
+from config import APP_ALIASES, APP_WEB_FALLBACKS
 
 
 class AppLauncher:
@@ -34,26 +34,34 @@ class AppLauncher:
         return self._run_command(f"start {app_name}", app_name)
 
     def _run_command(self, command, display_name):
-        """Command execute karo to open an app."""
+        """Command execute karo to open an app. Agar fail ho to web version try karo."""
         try:
             if command.startswith("start "):
-                subprocess.Popen(
+                result = subprocess.Popen(
                     command, shell=True,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
             else:
-                subprocess.Popen(
+                result = subprocess.Popen(
                     command,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
             print(f"[AppLauncher] Opening: {display_name}")
             return True
-        except FileNotFoundError:
-            print(f"[AppLauncher] App not found: {display_name}")
-            return False
+        except (FileNotFoundError, OSError):
+            return self._try_web_fallback(display_name)
         except Exception as e:
             print(f"[AppLauncher] Error opening {display_name}: {e}")
-            return False
+            return self._try_web_fallback(display_name)
+
+    def _try_web_fallback(self, app_name):
+        """Agar app install nahi hai to browser mein web version kholo."""
+        web_url = APP_WEB_FALLBACKS.get(app_name.lower())
+        if web_url:
+            print(f"[AppLauncher] App not installed, opening web version: {web_url}")
+            return self.open_website(web_url)
+        print(f"[AppLauncher] App not found: {app_name}")
+        return False
 
     def close_window(self):
         """Current window close karo (Alt+F4)."""

@@ -162,6 +162,25 @@ APP_ALIASES = {
     "spotify": "start spotify:",
 }
 
+# --- Web fallbacks for apps that might not be installed ---
+# Agar app install nahi hai to browser mein web version khulega
+APP_WEB_FALLBACKS = {
+    "whatsapp": "https://web.whatsapp.com",
+    "telegram": "https://web.telegram.org",
+    "spotify": "https://open.spotify.com",
+    "mail": "https://outlook.live.com",
+    "calendar": "https://outlook.live.com/calendar",
+    "maps": "https://www.google.com/maps",
+    "store": "https://apps.microsoft.com",
+    "youtube": "https://www.youtube.com",
+    "facebook": "https://www.facebook.com",
+    "instagram": "https://www.instagram.com",
+    "twitter": "https://www.twitter.com",
+    "gmail": "https://mail.google.com",
+    "google drive": "https://drive.google.com",
+    "google docs": "https://docs.google.com",
+}
+
 
 def load_custom_commands():
     """commands.json se custom commands load karo."""
