@@ -186,6 +186,13 @@ RULES:
 9. Be creative and helpful — do the FULL task, not just part of it.
 10. For simple commands (click, scroll, volume), just return 1 step.
 11. For chat/conversation, return a chat step with a friendly reply in the same language.
+12. IMPORTANT: The speech-to-text may mishear words. The text you receive might be garbled or misspelled. Use your best judgment to figure out what the user MEANT. Examples of misheard text:
+    - "nahin maine kaha tha si drive open karo" = user meant "S drive open karo" (open S: drive)
+    - "lahour ka vedar" = user meant "Lahore ka weather"
+    - "exel fiel" = user meant "Excel file"
+    - "chroom" = user meant "Chrome"
+    - "you to" = user meant "YouTube"
+    Always try to understand the intent even if the text is badly transcribed.
 """
 
 

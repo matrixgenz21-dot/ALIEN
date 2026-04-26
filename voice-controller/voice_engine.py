@@ -62,10 +62,21 @@ class VoiceEngine:
                     phrase_time_limit=PHRASE_TIMEOUT,
                 )
 
-            text = self._recognizer.recognize_google(
-                audio, language=LANGUAGE
-            )
-            text = text.lower().strip()
+            # Try Urdu first, then English — pick the best result
+            results = []
+            for lang in ["ur-PK", "en-US"]:
+                try:
+                    t = self._recognizer.recognize_google(audio, language=lang)
+                    if t:
+                        results.append(t.lower().strip())
+                except (sr.UnknownValueError, sr.RequestError):
+                    pass
+
+            if not results:
+                return None
+
+            # Use longest result (usually more accurate)
+            text = max(results, key=len)
             print(f"[You said]: {text}")
             return text
 

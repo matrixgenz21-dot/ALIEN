@@ -14,8 +14,8 @@ USE_AI = True               # True = AI samjhe ga kuch bhi bolo, False = sirf fi
 # --- General Settings ---
 LANGUAGE = "en-US"          # "en-US" for English, "ur-PK" for Urdu
 WAKE_WORD = None            # None = always active (no wake word needed)
-MOUSE_STEP = 30             # Mouse kitne pixels move kare ek baar mein
-MOUSE_FAST_STEP = 100       # Tez mouse movement (jab "fast" bolo)
+MOUSE_STEP = 80              # Mouse kitne pixels move kare ek baar mein (zyada = bada move)
+MOUSE_FAST_STEP = 250        # Tez mouse movement (jab "fast" bolo)
 LISTEN_TIMEOUT = 15         # Kitne seconds tak awaz ka wait kare (seconds)
 PHRASE_TIMEOUT = 30         # Ek phrase kitni der tak sun sakta hai (lamba bolne ke liye)
 PAUSE_THRESHOLD = 1.5       # Kitni der chup rahe to phrase khatam samjhe (seconds)

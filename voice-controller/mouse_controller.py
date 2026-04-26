@@ -1,12 +1,13 @@
 """
 Voice Controller - Mouse Control Module
 Awaz se mouse ko control karo - move, click, scroll, drag.
+Mouse insaan ki tarha smoothly move karega.
 """
 
 try:
     import pyautogui
     pyautogui.FAILSAFE = True
-    pyautogui.PAUSE = 0.1
+    pyautogui.PAUSE = 0.05
     PYAUTOGUI_AVAILABLE = True
 except ImportError:
     PYAUTOGUI_AVAILABLE = False
@@ -41,26 +42,30 @@ class MouseController:
             return (1920, 1080)
         return pyautogui.size()
 
-    # --- Movement ---
+    # --- Smooth Movement (human-like) ---
     def move_up(self, step=None):
         if not self._check():
             return
-        pyautogui.moveRel(0, -(step or MOUSE_STEP), duration=0.1)
+        pixels = step or MOUSE_STEP
+        pyautogui.moveRel(0, -pixels, duration=0.4)
 
     def move_down(self, step=None):
         if not self._check():
             return
-        pyautogui.moveRel(0, step or MOUSE_STEP, duration=0.1)
+        pixels = step or MOUSE_STEP
+        pyautogui.moveRel(0, pixels, duration=0.4)
 
     def move_left(self, step=None):
         if not self._check():
             return
-        pyautogui.moveRel(-(step or MOUSE_STEP), 0, duration=0.1)
+        pixels = step or MOUSE_STEP
+        pyautogui.moveRel(-pixels, 0, duration=0.4)
 
     def move_right(self, step=None):
         if not self._check():
             return
-        pyautogui.moveRel(step or MOUSE_STEP, 0, duration=0.1)
+        pixels = step or MOUSE_STEP
+        pyautogui.moveRel(pixels, 0, duration=0.4)
 
     def fast_move_up(self):
         self.move_up(MOUSE_FAST_STEP)
@@ -75,17 +80,17 @@ class MouseController:
         self.move_right(MOUSE_FAST_STEP)
 
     def center_mouse(self):
-        """Mouse ko screen ke center mein le jao."""
+        """Mouse ko screen ke center mein le jao smoothly."""
         if not self._check():
             return
         w, h = pyautogui.size()
-        pyautogui.moveTo(w // 2, h // 2, duration=0.3)
+        pyautogui.moveTo(w // 2, h // 2, duration=0.6)
 
     def move_to(self, x, y):
-        """Mouse ko specific position pe le jao."""
+        """Mouse ko specific position pe le jao smoothly."""
         if not self._check():
             return
-        pyautogui.moveTo(x, y, duration=0.2)
+        pyautogui.moveTo(x, y, duration=0.5)
 
     # --- Clicks ---
     def left_click(self):
