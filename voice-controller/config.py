@@ -6,9 +6,14 @@ Sari settings aur commands yahan hain. Apni marzi se change kar sakte ho.
 import json
 import os
 
+# --- Groq AI Settings ---
+GROQ_API_KEY = ""           # Apni Groq API key yahan paste karo (https://console.groq.com/keys)
+GROQ_MODEL = "llama-3.3-70b-versatile"  # Groq model name
+USE_AI = True               # True = AI samjhe ga kuch bhi bolo, False = sirf fixed commands
+
 # --- General Settings ---
 LANGUAGE = "en-US"          # "en-US" for English, "ur-PK" for Urdu
-WAKE_WORD = "hello"         # Bot tab active hoga jab ye bolo (set None to disable)
+WAKE_WORD = None            # None = always active (no wake word needed)
 MOUSE_STEP = 30             # Mouse kitne pixels move kare ek baar mein
 MOUSE_FAST_STEP = 100       # Tez mouse movement (jab "fast" bolo)
 LISTEN_TIMEOUT = 5          # Kitne seconds tak sune (seconds)

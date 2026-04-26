@@ -2,26 +2,30 @@
 
 **Apni awaz se apna computer chalao!** - Control your computer with your voice!
 
-Ye bot tumhari awaz sun ke mouse, keyboard, media player, aur apps control karta hai. Un logon ke liye jo keyboard/mouse use nahi kar sakte ya voice se kaam karna chahte hain.
+Ye bot tumhari awaz sun ke mouse, keyboard, media player, aur apps control karta hai.
+**AI Mode** mein kuch bhi bolo — kisi bhi zuban mein — bot samajh ke kaam karega!
 
 ---
 
-## Features / Kya kar sakta hai
+## AI Mode (Groq AI)
 
-| Feature | Commands |
-|---------|----------|
-| **Mouse Control** | move up/down/left/right, click, double click, right click, scroll, drag & drop |
-| **Keyboard** | type any text, press any key (enter, escape, tab, etc.) |
-| **Shortcuts** | copy, paste, cut, undo, redo, save, select all, find, etc. |
-| **Media** | play, pause, stop, next track, previous track, volume up/down, mute |
-| **Apps** | open notepad, chrome, calculator, or any app by name |
-| **Websites** | "go to youtube.com" - browser mein open ho jaye ga |
-| **Window Control** | minimize, maximize, close window, switch window |
-| **Repeat** | "scroll down 5 times" - koi bhi command repeat karo |
+AI mode ON karne se tumhe koi specific command yaad rakhne ki zaroorat NAHI.
+Kuch bhi bolo, jaise:
+
+- "zara mouse thoda upar le jao" → mouse upar
+- "ye band karo" → window close
+- "awaaz barha do" → volume up
+- "chrome khol do" → Chrome open
+- "kuch likh do hello world" → type karega
+- "youtube khol do" → YouTube open
+- "agla gaana laga do" → next track
+- "kya tum mujhe sun sakte ho?" → bot jawab de ga!
+
+**English, Urdu, Hindi, Roman Urdu — kuch bhi bolo!**
 
 ---
 
-## Setup / Install Kaise Karo
+## Setup / Install Kaise Karo (Step by Step)
 
 ### Step 1: Python Install Karo
 1. Jao: **https://www.python.org/downloads/**
@@ -29,7 +33,8 @@ Ye bot tumhari awaz sun ke mouse, keyboard, media player, aur apps control karta
 3. Install karte waqt **"Add Python to PATH"** checkbox **zaroor check karo!**
 
 ### Step 2: Voice Controller Files Copy Karo
-1. Ye poora `voice-controller` folder apne laptop mein kisi jagah copy karo
+1. GitHub se poora `voice-controller` folder download karo
+2. Apne laptop mein kisi jagah paste karo
    - Example: `C:\Users\TumharaName\Desktop\voice-controller\`
 
 ### Step 3: Setup Run Karo
@@ -42,145 +47,134 @@ Ye bot tumhari awaz sun ke mouse, keyboard, media player, aur apps control karta
    pipwin install pyaudio
    ```
 
-### Step 4: Bot Chalao
+### Step 4: Groq AI Key Lagao (FREE hai!)
+1. Jao: **https://console.groq.com/keys**
+2. Sign up karo (Google account se bhi ho jata hai)
+3. **"Create API Key"** button click karo
+4. Jo key mile wo copy karo
+5. `config.py` file Notepad mein kholo
+6. Line 10 mein `GROQ_API_KEY = ""` ke andar key paste karo:
+   ```python
+   GROQ_API_KEY = "gsk_tumhari_key_yahan_paste_karo"
+   ```
+7. File save karo (Ctrl+S)
+
+### Step 5: Bot Chalao
 1. **`run.bat`** double-click karo
-2. Ya CMD kholo, folder mein jao, aur type karo:
-   ```
-   python main.py
-   ```
+2. Bolo kuch bhi — bot samjhe ga aur kaam karega!
 
 ---
 
-## Commands / Kya Bol Sakte Ho
+## Kya Bol Sakte Ho (Examples)
 
-### Mouse Commands
-| Bolo | Kya Hoga |
+### Mouse
+| Bolo (kuch bhi) | Kya Hoga |
 |------|----------|
-| "mouse up" | Mouse upar jaye ga |
-| "mouse down" | Mouse neeche jaye ga |
-| "mouse left" | Mouse baayein jaye ga |
-| "mouse right" | Mouse daayein jaye ga |
-| "move fast up" | Mouse tezi se upar |
-| "click" | Left click |
+| "mouse upar" / "upar le jao" | Mouse upar jaye ga |
+| "neeche" / "mouse down" | Mouse neeche |
+| "click karo" / "click" | Left click |
 | "double click" | Double click |
 | "right click" | Right click |
-| "scroll up" | Page upar scroll |
-| "scroll down" | Page neeche scroll |
-| "center mouse" | Mouse screen ke beech mein |
-| "drag" | Drag start (hold) |
-| "drop" | Drag end (release) |
+| "scroll upar" / "scroll up" | Page upar scroll |
+| "scroll neeche" | Page neeche scroll |
 
-### Keyboard Commands
+### Keyboard / Typing
 | Bolo | Kya Hoga |
 |------|----------|
-| "type hello world" | "hello world" type ho jaye ga |
-| "press enter" | Enter key |
-| "press escape" | Escape key |
-| "press tab" | Tab key |
-| "press space" | Space bar |
-| "press backspace" | Backspace |
-| "press delete" | Delete key |
-| "press up/down/left/right" | Arrow keys |
+| "likh do hello world" / "type hello" | Text type karega |
+| "enter dabao" / "press enter" | Enter key |
+| "backspace" | Backspace key |
+| "escape" | Escape key |
 
 ### Shortcuts
 | Bolo | Kya Hoga |
 |------|----------|
-| "copy" | Ctrl+C |
-| "paste" | Ctrl+V |
-| "cut" | Ctrl+X |
+| "copy karo" | Ctrl+C |
+| "paste karo" | Ctrl+V |
 | "undo" | Ctrl+Z |
-| "redo" | Ctrl+Y |
+| "save karo" | Ctrl+S |
 | "select all" | Ctrl+A |
-| "save" | Ctrl+S |
-| "find" | Ctrl+F |
-| "new tab" | Ctrl+T |
-| "close tab" | Ctrl+W |
-| "close window" | Alt+F4 |
-| "switch window" | Alt+Tab |
-| "screenshot" | Win+Shift+S |
-| "zoom in" | Ctrl++ |
-| "zoom out" | Ctrl+- |
+| "find karo" | Ctrl+F |
+| "tab band karo" / "close tab" | Ctrl+W |
+| "window band karo" | Alt+F4 |
+| "screenshot lo" | Win+Shift+S |
 
-### Media Controls
+### Media
 | Bolo | Kya Hoga |
 |------|----------|
-| "play" / "pause" | Play/Pause toggle |
-| "stop" | Stop media |
-| "next track" | Agla gaana |
-| "previous track" | Pichla gaana |
-| "volume up" | Awaz barha |
-| "volume down" | Awaz kam kar |
-| "mute" | Mute toggle |
+| "gaana chalao" / "play" | Play/Pause |
+| "awaaz barha do" / "volume up" | Volume up |
+| "awaaz kam karo" | Volume down |
+| "agla gaana" / "next" | Next track |
+| "mute karo" | Mute |
 
-### App Commands
+### Apps Kholna
 | Bolo | Kya Hoga |
 |------|----------|
-| "open notepad" | Notepad khul jaye ga |
-| "open chrome" | Chrome browser khule ga |
-| "open calculator" | Calculator khule ga |
-| "open paint" | MS Paint khule ga |
-| "open file manager" | File Explorer khule ga |
-| "open cmd" | Command Prompt khule ga |
+| "notepad kholo" / "open notepad" | Notepad |
+| "chrome kholo" | Chrome browser |
+| "calculator kholo" | Calculator |
+| "paint kholo" | MS Paint |
+| "file manager kholo" | File Explorer |
 
-### Website Commands
+### Websites
 | Bolo | Kya Hoga |
 |------|----------|
-| "go to youtube.com" | YouTube open hoga |
-| "go to google.com" | Google open hoga |
+| "youtube khol do" | YouTube open |
+| "google kholo" | Google open |
 
-### System Commands
+### System
 | Bolo | Kya Hoga |
 |------|----------|
-| "help" | Sab commands dikhao |
-| "status" | Mouse position aur screen info |
-| "stop listening" | Sunna band karo |
-| "start listening" | Dubara sunna shuru karo |
-| "exit" / "quit" / "goodbye" | Bot band karo |
+| "help" | Commands dikhao |
+| "exit" / "band karo" | Bot band karo |
 
-### Repeat Commands
-| Bolo | Kya Hoga |
-|------|----------|
-| "scroll down 5 times" | 5 baar scroll down |
-| "mouse up 10 times" | 10 baar mouse up |
-| "click 3 times" | 3 baar click |
+### Baat Cheet (Chat)
+AI mode mein tum bot se baat bhi kar sakte ho:
+- "kya tum mujhe sun sakte ho?" → "Haan! Main sun raha hoon!"
+- "tum kya kar sakte ho?" → Bot bataye ga
 
 ---
 
-## Settings / Settings Badlo
+## Settings Badlna
 
-`config.py` file mein ye cheezein change kar sakte ho:
+`config.py` file Notepad mein kholo. Important settings:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `LANGUAGE` | `"en-US"` | `"en-US"` English, `"ur-PK"` Urdu |
-| `WAKE_WORD` | `"hello"` | Bot tab active ho jab ye bolo. `None` = always active |
-| `MOUSE_STEP` | `30` | Mouse kitna move kare (pixels) |
-| `MOUSE_FAST_STEP` | `100` | Fast move mein kitna move kare |
-| `SPEECH_RATE` | `170` | Bot kitni tezi se bole |
-| `SPEECH_VOLUME` | `0.9` | Bot ki awaz (0.0 to 1.0) |
-| `ENERGY_THRESHOLD` | `300` | Mic sensitivity (kam = zyada sensitive) |
+| Setting | Kya hai | Default |
+|---------|---------|---------|
+| `GROQ_API_KEY` | Tumhari Groq API key | `""` (khali) |
+| `USE_AI` | AI mode on/off | `True` |
+| `LANGUAGE` | Zuban | `"en-US"` |
+| `MOUSE_STEP` | Mouse kitna move kare | `30` |
+| `SPEECH_RATE` | Bot kitni tezi se bole | `170` |
+| `SPEECH_VOLUME` | Bot ki awaz | `0.9` |
 
 ---
 
-## Custom Commands / Apne Commands Banao
+## File Structure
 
-`commands.json` file mein apne commands add kar sakte ho:
-
-```json
-{
-    "commands": {
-        "open youtube": "start chrome https://www.youtube.com",
-        "open google": "start chrome https://www.google.com",
-        "play music": "start wmplayer"
-    }
-}
+```
+voice-controller/
+├── main.py                  # Main program - ye chalao
+├── ai_brain.py              # Groq AI - kuch bhi samjhe
+├── voice_engine.py          # Awaz sun ne ka module
+├── command_parser.py        # Commands parse kare (backup)
+├── mouse_controller.py      # Mouse control
+├── keyboard_controller.py   # Keyboard control
+├── media_controller.py      # Media playback control
+├── app_launcher.py          # Apps open/close
+├── speaker.py               # Bot bolta hai (TTS)
+├── config.py                # Settings - GROQ KEY YAHAN LAGAO
+├── commands.json            # Custom commands
+├── requirements.txt         # Python packages list
+├── setup.bat                # Setup (double-click)
+├── run.bat                  # Run (double-click)
+└── README.md                # Ye file
 ```
 
-Bot restart karo changes apply karne ke liye.
-
 ---
 
-## Troubleshooting / Masla Aaye To
+## Masla Aaye To (Troubleshooting)
 
 ### "Python nahi mila"
 - Python install karo: https://www.python.org/downloads/
@@ -192,40 +186,15 @@ pip install pipwin
 pipwin install pyaudio
 ```
 
-### "Microphone kaam nahi kar raha"
-- Windows Settings > Privacy > Microphone > Apps ko allow karo
-- Microphone connected hai ya nahi check karo
+### "AI kaam nahi kar raha"
+- `config.py` mein `GROQ_API_KEY` set karo
+- Internet connection check karo
+- Key free hai: https://console.groq.com/keys
 
 ### "Awaz samajh nahi aa rahi"
-- Internet connection check karo (Google Speech API online kaam karta hai)
-- Shor wali jagah se door jao
-- `config.py` mein `ENERGY_THRESHOLD` kam karo (e.g., 200)
-
-### "Commands kaam nahi kar rahe"
-- Admin mode mein run karo (right click > Run as Administrator)
-- Antivirus mein exception add karo
-
----
-
-## File Structure
-
-```
-voice-controller/
-├── main.py                  # Main program - ye chalao
-├── voice_engine.py          # Awaz sun ne ka module
-├── command_parser.py        # Awaz ko command mein badle
-├── mouse_controller.py      # Mouse control
-├── keyboard_controller.py   # Keyboard control
-├── media_controller.py      # Media playback control
-├── app_launcher.py          # Apps open/close
-├── speaker.py               # Bot bolta hai (TTS)
-├── config.py                # Settings aur command mappings
-├── commands.json            # Custom commands (user-editable)
-├── requirements.txt         # Python packages list
-├── setup.bat                # One-click setup (double-click)
-├── run.bat                  # One-click run (double-click)
-└── README.md                # Ye file - instructions
-```
+- Internet connection check karo
+- Microphone connected hai check karo
+- Windows Settings > Privacy > Microphone > Apps ko allow karo
 
 ---
 
@@ -234,7 +203,8 @@ voice-controller/
 - **Windows 10/11**
 - **Python 3.10+**
 - **Microphone** (laptop ka built-in bhi chal jaye ga)
-- **Internet connection** (Google Speech Recognition ke liye)
+- **Internet connection**
+- **Groq API key** (FREE — https://console.groq.com/keys)
 
 ---
 

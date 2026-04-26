@@ -11,10 +11,11 @@ import sys
 import time
 import logging
 
-from config import CONTINUOUS_LISTEN, WAKE_WORD, LOG_FILE
+from config import CONTINUOUS_LISTEN, WAKE_WORD, LOG_FILE, USE_AI
 from speaker import Speaker
 from voice_engine import VoiceEngine
 from command_parser import CommandParser
+from ai_brain import AIBrain
 from mouse_controller import MouseController
 from keyboard_controller import KeyboardController
 from media_controller import MediaController
@@ -42,6 +43,7 @@ class VoiceController:
         self.speaker = Speaker()
         self.voice = VoiceEngine()
         self.parser = CommandParser()
+        self.ai = AIBrain()
         self.mouse = MouseController()
         self.keyboard = KeyboardController()
         self.media = MediaController()
@@ -49,6 +51,12 @@ class VoiceController:
 
         self.running = True
         self.paused = False
+        self.use_ai = USE_AI and self.ai.enabled
+
+        if self.use_ai:
+            print("\n[Mode] AI Mode ON - Kuch bhi bolo, AI samjhe ga!")
+        else:
+            print("\n[Mode] Fixed Commands Mode - Sirf specific commands chalein ge.")
 
     def handle_command(self, parsed):
         """Parsed command ko execute karo."""
@@ -119,8 +127,100 @@ class VoiceController:
             logger.info(f"Custom command: {action}")
 
         elif cmd_type == "unknown":
-            self.speaker.say("Command samajh nahi aaya. 'help' bolo for commands.")
-            logger.warning(f"Unknown command: {raw}")
+            if self.use_ai:
+                self._handle_ai(raw)
+            else:
+                self.speaker.say("Command samajh nahi aaya. 'help' bolo for commands.")
+                logger.warning(f"Unknown command: {raw}")
+
+    def _handle_ai(self, text):
+        """AI Brain se natural language samajh ke execute karo."""
+        result = self.ai.understand(text)
+        if not result:
+            self.speaker.say("AI se baat nahi ho payi. Internet check karo.")
+            return
+
+        action_type = result.get("action", "")
+        logger.info(f"AI: {text} -> {result}")
+
+        if action_type == "mouse":
+            cmd = result.get("command", "")
+            if self.mouse.execute(cmd):
+                self.speaker.say("Done")
+            else:
+                self.speaker.say(f"Mouse action failed: {cmd}")
+
+        elif action_type == "keyboard":
+            cmd = result.get("command", "")
+            self.keyboard.press_key(cmd)
+            self.speaker.say(f"Pressed {cmd}")
+
+        elif action_type == "type":
+            text_to_type = result.get("text", "")
+            if text_to_type:
+                self.keyboard.type_text(text_to_type)
+                self.speaker.say(f"Typed: {text_to_type}")
+
+        elif action_type == "shortcut":
+            keys = result.get("keys", [])
+            if keys:
+                self.keyboard.hotkey(*keys)
+                self.speaker.say("Done")
+
+        elif action_type == "media":
+            cmd = result.get("command", "")
+            if self.media.execute(cmd):
+                self.speaker.say("Done")
+
+        elif action_type == "open":
+            app = result.get("app", "")
+            if app:
+                if self.apps.open_app(app):
+                    self.speaker.say(f"Opening {app}")
+                else:
+                    self.speaker.say(f"Could not open {app}")
+
+        elif action_type == "website":
+            url = result.get("url", "")
+            if url:
+                self.apps.open_website(url)
+                self.speaker.say("Opening website")
+
+        elif action_type == "system":
+            cmd = result.get("command", "")
+            self._handle_system(cmd)
+
+        elif action_type == "repeat":
+            times = min(result.get("times", 1), 50)
+            inner = result.get("inner", {})
+            self.speaker.say(f"Repeating {times} times")
+            for _ in range(times):
+                self._handle_ai_action(inner)
+                time.sleep(0.15)
+
+        elif action_type == "chat":
+            reply = result.get("reply", "")
+            if reply:
+                self.speaker.say(reply)
+
+        else:
+            self.speaker.say("Samajh nahi aaya, dubara bolo.")
+
+    def _handle_ai_action(self, result):
+        """AI repeat ke andar wale action ko execute karo."""
+        if not result:
+            return
+        action_type = result.get("action", "")
+        if action_type == "mouse":
+            self.mouse.execute(result.get("command", ""))
+        elif action_type == "keyboard":
+            self.keyboard.press_key(result.get("command", ""))
+        elif action_type == "shortcut":
+            keys = result.get("keys", [])
+            if keys:
+                self.keyboard.hotkey(*keys)
+        elif action_type == "media":
+            self.media.execute(result.get("command", ""))
 
     def _handle_system(self, action):
         """System commands handle karo."""
@@ -186,8 +286,11 @@ class VoiceController:
                     continue
 
                 if text:
-                    parsed = self.parser.parse(text)
-                    self.handle_command(parsed)
+                    if self.use_ai:
+                        self._handle_ai(text)
+                    else:
+                        parsed = self.parser.parse(text)
+                        self.handle_command(parsed)
 
                 if not CONTINUOUS_LISTEN and text:
                     time.sleep(0.5)

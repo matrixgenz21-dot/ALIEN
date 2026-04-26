@@ -21,12 +21,12 @@ echo [1/3] Python found!
 python --version
 echo.
 
-echo [2/3] Installing required packages...
+echo [2/4] Installing required packages...
 echo.
-pip install SpeechRecognition pyautogui pyttsx3 pyperclip
+pip install SpeechRecognition pyautogui pyttsx3 pyperclip groq
 echo.
 
-echo [3/3] Installing PyAudio...
+echo [3/4] Installing PyAudio...
 echo (Agar error aaye to neeche instructions follow karo)
 echo.
 pip install PyAudio
@@ -41,10 +41,20 @@ if errorlevel 1 (
 )
 
 echo.
+echo [4/4] Groq AI Setup...
+echo.
+echo Groq API key chahiye AI mode ke liye (FREE hai):
+echo   1. Jao: https://console.groq.com/keys
+echo   2. Sign up karo (Google se bhi ho jata hai)
+echo   3. "Create API Key" click karo
+echo   4. Key copy karo
+echo   5. config.py kholke GROQ_API_KEY mein paste karo
+echo.
+
 echo ========================================
 echo   SETUP COMPLETE!
-echo   Ab 'run.bat' double-click karo
-echo   ya CMD mein type karo: python main.py
+echo   config.py mein GROQ_API_KEY set karo
+echo   Phir 'run.bat' double-click karo
 echo ========================================
 echo.
 pause
