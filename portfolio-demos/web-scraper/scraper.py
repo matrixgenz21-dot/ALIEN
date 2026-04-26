@@ -71,7 +71,7 @@ class WebScraper:
 
         self.data = {
             "url": url,
-            "title": soup.title.string.strip() if soup.title else "No Title",
+            "title": soup.title.string.strip() if soup.title and soup.title.string else "No Title",
             "scraped_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "headings": self._extract_headings(soup),
             "links": self._extract_links(soup, url),

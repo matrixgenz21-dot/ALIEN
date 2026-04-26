@@ -198,8 +198,8 @@ class ChatbotGUI:
         try:
             messages = [{"role": "system", "content": BOT_PERSONALITY}]
 
-            # Add last 10 messages as context
-            for msg in self.chat_history[-10:]:
+            # Add last 10 messages as context (excluding current message which we add explicitly)
+            for msg in self.chat_history[-11:-1]:
                 role = "assistant" if msg["sender"] == "bot" else "user"
                 messages.append({"role": role, "content": msg["text"]})
 
