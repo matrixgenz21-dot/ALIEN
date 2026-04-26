@@ -16,8 +16,9 @@ LANGUAGE = "en-US"          # "en-US" for English, "ur-PK" for Urdu
 WAKE_WORD = None            # None = always active (no wake word needed)
 MOUSE_STEP = 30             # Mouse kitne pixels move kare ek baar mein
 MOUSE_FAST_STEP = 100       # Tez mouse movement (jab "fast" bolo)
-LISTEN_TIMEOUT = 5          # Kitne seconds tak sune (seconds)
-PHRASE_TIMEOUT = 10         # Ek phrase kitni der tak sun sakta hai
+LISTEN_TIMEOUT = 15         # Kitne seconds tak awaz ka wait kare (seconds)
+PHRASE_TIMEOUT = 30         # Ek phrase kitni der tak sun sakta hai (lamba bolne ke liye)
+PAUSE_THRESHOLD = 1.5       # Kitni der chup rahe to phrase khatam samjhe (seconds)
 SPEECH_RATE = 170           # Bot kitni tezi se bole (words per minute)
 SPEECH_VOLUME = 0.9         # Bot ki awaz kitni loud ho (0.0 to 1.0)
 ENERGY_THRESHOLD = 300      # Microphone sensitivity (lower = more sensitive)

@@ -9,7 +9,7 @@ try:
 except ImportError:
     SR_AVAILABLE = False
 
-from config import LANGUAGE, LISTEN_TIMEOUT, PHRASE_TIMEOUT, ENERGY_THRESHOLD
+from config import LANGUAGE, LISTEN_TIMEOUT, PHRASE_TIMEOUT, ENERGY_THRESHOLD, PAUSE_THRESHOLD
 
 
 class VoiceEngine:
@@ -29,7 +29,7 @@ class VoiceEngine:
             self._recognizer = sr.Recognizer()
             self._recognizer.energy_threshold = ENERGY_THRESHOLD
             self._recognizer.dynamic_energy_threshold = True
-            self._recognizer.pause_threshold = 0.8
+            self._recognizer.pause_threshold = PAUSE_THRESHOLD
 
             self._microphone = sr.Microphone()
 
