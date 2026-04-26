@@ -125,7 +125,6 @@ class VoiceController:
     def _handle_system(self, action):
         """System commands handle karo."""
         if action == "pause_listening":
-            self.voice.pause()
             self.paused = True
             self.speaker.say_sync("Listening paused. Say 'start listening' to resume.")
 
@@ -180,6 +179,11 @@ class VoiceController:
         while self.running:
             try:
                 text = self.voice.listen()
+
+                if text and self.paused:
+                    if text.strip().lower() == "start listening":
+                        self._handle_system("resume_listening")
+                    continue
 
                 if text:
                     parsed = self.parser.parse(text)

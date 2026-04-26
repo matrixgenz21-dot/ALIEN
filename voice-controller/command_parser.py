@@ -66,15 +66,26 @@ class CommandParser:
                 "raw": text,
             }
 
+        # 1) Exact match against known commands first (system, shortcuts, etc.)
+        for cmd_text, (cmd_type, cmd_action) in self._commands.items():
+            if cmd_text == text:
+                return {
+                    "type": cmd_type,
+                    "action": cmd_action,
+                    "args": None,
+                    "raw": text,
+                }
+
+        # 2) Special pattern-based commands (order matters)
         result = self._check_type_command(text)
         if result:
             return result
 
-        result = self._check_open_command(text)
+        result = self._check_website_command(text)
         if result:
             return result
 
-        result = self._check_website_command(text)
+        result = self._check_open_command(text)
         if result:
             return result
 
@@ -86,8 +97,9 @@ class CommandParser:
         if result:
             return result
 
+        # 3) Partial/prefix match against known commands
         for cmd_text, (cmd_type, cmd_action) in self._commands.items():
-            if cmd_text == text or text.startswith(cmd_text):
+            if text.startswith(cmd_text):
                 return {
                     "type": cmd_type,
                     "action": cmd_action,
