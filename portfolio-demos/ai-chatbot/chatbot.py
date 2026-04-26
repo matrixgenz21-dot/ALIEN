@@ -220,7 +220,7 @@ class ChatbotGUI:
     def _get_fallback_response(self, text):
         text_lower = text.lower()
         for keyword, response in FALLBACK_RESPONSES.items():
-            if keyword in text_lower:
+            if keyword != "default" and keyword in text_lower.split():
                 return response
         return FALLBACK_RESPONSES["default"]
 

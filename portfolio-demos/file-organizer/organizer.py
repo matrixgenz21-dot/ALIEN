@@ -178,10 +178,17 @@ class FileOrganizer:
     def _is_duplicate(self, file1, file2):
         """Check if two files are the same by comparing hash."""
         try:
+            h1 = hashlib.md5()
+            h2 = hashlib.md5()
             with open(file1, "rb") as f1, open(file2, "rb") as f2:
-                hash1 = hashlib.md5(f1.read(8192)).hexdigest()
-                hash2 = hashlib.md5(f2.read(8192)).hexdigest()
-            return hash1 == hash2
+                while True:
+                    chunk1 = f1.read(8192)
+                    chunk2 = f2.read(8192)
+                    if not chunk1 and not chunk2:
+                        break
+                    h1.update(chunk1)
+                    h2.update(chunk2)
+            return h1.hexdigest() == h2.hexdigest()
         except Exception:
             return False
 

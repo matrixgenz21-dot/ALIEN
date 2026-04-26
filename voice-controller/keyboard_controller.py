@@ -38,7 +38,7 @@ class KeyboardController:
             elif char == "\t":
                 pyautogui.press("tab")
                 time.sleep(0.03)
-            elif char.isascii() and char.isprintable():
+            elif char.isascii() and char.isprintable() and not char.isupper():
                 pyautogui.press(char)
                 time.sleep(0.04)
             else:
