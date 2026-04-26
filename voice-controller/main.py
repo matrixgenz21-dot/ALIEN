@@ -163,69 +163,77 @@ class VoiceController:
             print(f"[AIBrain] All {total} steps done.")
 
     def _execute_step(self, step, num, total):
-        """Ek step execute karo."""
-        step_type = step.get("step", step.get("action", ""))
+        """Ek step execute karo with error handling."""
+        try:
+            step_type = step.get("step", step.get("action", ""))
 
-        if step_type == "mouse":
-            cmd = step.get("command", "")
-            self.mouse.execute(cmd)
-            print(f"  [{num}/{total}] Mouse: {cmd}")
+            if step_type == "mouse":
+                cmd = step.get("command", "")
+                self.mouse.execute(cmd)
+                print(f"  [{num}/{total}] Mouse: {cmd}")
 
-        elif step_type == "keyboard":
-            cmd = step.get("command", "")
-            self.keyboard.press_key(cmd)
-            print(f"  [{num}/{total}] Key: {cmd}")
+            elif step_type == "keyboard":
+                cmd = step.get("command", "")
+                self.keyboard.press_key(cmd)
+                print(f"  [{num}/{total}] Key: {cmd}")
 
-        elif step_type == "type":
-            text = step.get("text", "")
-            if text:
-                self.keyboard.type_text(text)
-                print(f"  [{num}/{total}] Typed: {text}")
+            elif step_type == "type":
+                text = step.get("text", "")
+                if text:
+                    self.keyboard.type_text(text)
+                    print(f"  [{num}/{total}] Typed: {text}")
 
-        elif step_type == "shortcut":
-            keys = step.get("keys", [])
-            if keys:
-                self.keyboard.hotkey(*keys)
-                print(f"  [{num}/{total}] Shortcut: {'+'.join(keys)}")
+            elif step_type == "shortcut":
+                keys = step.get("keys", [])
+                if keys:
+                    self.keyboard.hotkey(*keys)
+                    print(f"  [{num}/{total}] Shortcut: {'+'.join(keys)}")
 
-        elif step_type == "media":
-            cmd = step.get("command", "")
-            self.media.execute(cmd)
-            print(f"  [{num}/{total}] Media: {cmd}")
+            elif step_type == "media":
+                cmd = step.get("command", "")
+                self.media.execute(cmd)
+                print(f"  [{num}/{total}] Media: {cmd}")
 
-        elif step_type == "open":
-            app = step.get("app", "")
-            if app:
-                self.apps.open_app(app)
-                print(f"  [{num}/{total}] Opening: {app}")
+            elif step_type == "open":
+                app = step.get("app", "")
+                if app:
+                    self.apps.open_app(app)
+                    print(f"  [{num}/{total}] Opening: {app}")
 
-        elif step_type == "website":
-            url = step.get("url", "")
-            if url:
-                self.apps.open_website(url)
-                print(f"  [{num}/{total}] Website: {url}")
+            elif step_type == "website":
+                url = step.get("url", "")
+                if url:
+                    self.apps.open_website(url)
+                    print(f"  [{num}/{total}] Website: {url}")
 
-        elif step_type == "wait":
-            seconds = min(step.get("seconds", 1), 10)
-            print(f"  [{num}/{total}] Waiting {seconds}s...")
-            time.sleep(seconds)
+            elif step_type == "wait":
+                seconds = min(step.get("seconds", 1), 10)
+                print(f"  [{num}/{total}] Waiting {seconds}s...")
+                time.sleep(seconds)
 
-        elif step_type == "speak":
-            text = step.get("text", "")
-            if text:
-                self.speaker.say_sync(text)
-                print(f"  [{num}/{total}] Said: {text}")
+            elif step_type == "speak":
+                text = step.get("text", "")
+                if text:
+                    self.speaker.say_sync(text)
+                    print(f"  [{num}/{total}] Said: {text}")
 
-        elif step_type == "system":
-            cmd = step.get("command", "")
-            self._handle_system(cmd)
-            print(f"  [{num}/{total}] System: {cmd}")
+            elif step_type == "system":
+                cmd = step.get("command", "")
+                self._handle_system(cmd)
+                print(f"  [{num}/{total}] System: {cmd}")
 
-        elif step_type == "chat":
-            reply = step.get("reply", "")
-            if reply:
-                self.speaker.say(reply)
-                print(f"  [{num}/{total}] Chat: {reply}")
+            elif step_type == "chat":
+                reply = step.get("reply", "")
+                if reply:
+                    self.speaker.say(reply)
+                    print(f"  [{num}/{total}] Chat: {reply}")
+
+            else:
+                print(f"  [{num}/{total}] Unknown step type: {step_type}")
+
+        except Exception as e:
+            print(f"  [{num}/{total}] ERROR in step: {e}")
+            logger.error(f"Step {num} failed: {step} -> {e}")
 
     def _handle_system(self, action):
         """System commands handle karo."""

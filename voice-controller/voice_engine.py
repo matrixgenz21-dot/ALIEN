@@ -62,21 +62,23 @@ class VoiceEngine:
                     phrase_time_limit=PHRASE_TIMEOUT,
                 )
 
-            # Try Urdu first, then English — pick the best result
-            results = []
-            for lang in ["ur-PK", "en-US"]:
+            # Use hi-IN (Hindi) — best for Urdu/Hindi/English mixed speech
+            # Fallback to en-IN (Indian English) if Hindi fails
+            text = None
+            for lang in ["hi-IN", "en-IN"]:
                 try:
-                    t = self._recognizer.recognize_google(audio, language=lang)
-                    if t:
-                        results.append(t.lower().strip())
-                except (sr.UnknownValueError, sr.RequestError):
-                    pass
+                    text = self._recognizer.recognize_google(audio, language=lang)
+                    if text:
+                        text = text.lower().strip()
+                        break
+                except sr.UnknownValueError:
+                    continue
+                except sr.RequestError:
+                    break
 
-            if not results:
+            if not text:
                 return None
 
-            # Use longest result (usually more accurate)
-            text = max(results, key=len)
             print(f"[You said]: {text}")
             return text
 
