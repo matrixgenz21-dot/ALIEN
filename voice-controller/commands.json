@@ -1,0 +1,10 @@
+{
+    "_comment": "Yahan apne custom commands add karo. Format: 'voice command': 'action description'",
+    "_instructions": "Neeche 'commands' mein apni marzi ke commands add karo aur bot restart karo.",
+    "commands": {
+        "open youtube": "start chrome https://www.youtube.com",
+        "open google": "start chrome https://www.google.com",
+        "open github": "start chrome https://github.com",
+        "take screenshot": "snippingtool"
+    }
+}
