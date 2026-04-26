@@ -137,7 +137,7 @@ class CodeGenerator:
                     {"role": "user", "content": description},
                 ],
                 temperature=0.2,
-                max_tokens=4096,
+                max_tokens=8192,
                 response_format={"type": "json_object"},
             )
 
@@ -178,7 +178,7 @@ class CodeGenerator:
                     {"role": "user", "content": context},
                 ],
                 temperature=0.2,
-                max_tokens=4096,
+                max_tokens=8192,
                 response_format={"type": "json_object"},
             )
 

@@ -30,15 +30,22 @@ class KeyboardController:
         """Text type karo keyboard se — insaan ki tarha slowly."""
         if not self._check():
             return
+        import time
         for char in text:
-            if char.isascii() and char.isprintable():
+            if char == "\n":
+                pyautogui.press("enter")
+                time.sleep(0.03)
+            elif char == "\t":
+                pyautogui.press("tab")
+                time.sleep(0.03)
+            elif char.isascii() and char.isprintable():
                 pyautogui.press(char)
+                time.sleep(0.04)
             else:
                 import pyperclip
                 pyperclip.copy(char)
                 pyautogui.hotkey("ctrl", "v")
-            import time
-            time.sleep(0.05)
+                time.sleep(0.04)
 
     def type_unicode(self, text):
         """Unicode text type karo (Urdu etc. ke liye)."""

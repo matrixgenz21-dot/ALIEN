@@ -232,8 +232,10 @@ RULES:
     - "you to" = user meant "YouTube"
     Always try to understand the intent even if the text is badly transcribed.
 13. CRITICAL: NEVER use separate keyboard steps for shortcuts! For Ctrl+A, Ctrl+C, Ctrl+S, Alt+F4, etc. — ALWAYS use {"step": "shortcut", "keys": ["ctrl", "a"]}. NEVER do {"step": "keyboard", "command": "ctrl"} followed by {"step": "keyboard", "command": "a"} — this will NOT work! Shortcuts MUST be a single "shortcut" step.
-14. Complete the ENTIRE task. Do not stop in the middle. If user says "Excel mein accounts format banao", create the FULL format with all columns and sample rows — not just headings.
-15. Keep total steps under 30 to avoid timeout issues. For very long tasks, do the most important parts.
+14. Complete the ENTIRE task. Do not stop in the middle. If user says "Excel mein accounts format banao", create the FULL format with all columns, sample rows, formulas — EVERYTHING.
+15. You can use up to 50 steps if needed. DO NOT cut the task short. Finish EVERYTHING.
+16. If you need to type long content, combine multiple lines into ONE type step with newline characters. Example: {"step": "type", "text": "Line 1\nLine 2\nLine 3"} — this is more efficient than separate type+enter steps.
+17. ALWAYS add a final "speak" step confirming the task is 100% complete.
 """
 
 
@@ -265,43 +267,82 @@ class AIBrain:
     def understand(self, text):
         """
         Natural language text ko samajh ke steps list return karo.
+        Agar task adhoora lage to continuation se poora karega.
 
         Returns: dict with "steps" array, or None on failure.
         """
         if not self.enabled or not self._client:
             return None
 
-        try:
-            response = self._client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": text},
-                ],
-                temperature=0.1,
-                max_tokens=1024,
-                response_format={"type": "json_object"},
-            )
+        all_steps = []
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ]
 
-            result_text = response.choices[0].message.content.strip()
-            result = json.loads(result_text)
+        # Try up to 3 rounds of continuation
+        for attempt in range(3):
+            try:
+                response = self._client.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=messages,
+                    temperature=0.1,
+                    max_tokens=4096,
+                    response_format={"type": "json_object"},
+                )
 
-            steps = result.get("steps", [])
-            if not steps:
-                if "action" in result:
-                    steps = [result]
-                    result = {"steps": steps}
+                result_text = response.choices[0].message.content.strip()
+                result = json.loads(result_text)
 
-            step_count = len(steps)
-            print(f"[AIBrain] Understood: {text} -> {step_count} step(s)")
-            for i, s in enumerate(steps):
-                print(f"  Step {i+1}: {s}")
+                steps = result.get("steps", [])
+                if not steps:
+                    if "action" in result:
+                        steps = [result]
 
-            return result
+                all_steps.extend(steps)
 
-        except json.JSONDecodeError as e:
-            print(f"[AIBrain] JSON parse error: {e}")
+                # Check if task seems complete
+                if steps:
+                    last_step = steps[-1]
+                    last_type = last_step.get("step", "")
+                    # If last step is speak/chat, task is likely complete
+                    if last_type in ("speak", "chat"):
+                        break
+                    # If few steps, task is simple and done
+                    if len(all_steps) < 10:
+                        break
+
+                # Check if we should continue
+                finish_reason = response.choices[0].finish_reason
+                if finish_reason == "length" and attempt < 2:
+                    # Output was cut off — ask AI to continue
+                    print(f"[AIBrain] Task may be incomplete, continuing... (round {attempt + 2})")
+                    messages.append({"role": "assistant", "content": result_text})
+                    messages.append({
+                        "role": "user",
+                        "content": "Task abhi complete nahi hua. Baaki steps continue karo. Return remaining steps as JSON {\"steps\": [...]}. Do NOT repeat steps already done."
+                    })
+                    continue
+
+                break
+
+            except json.JSONDecodeError as e:
+                print(f"[AIBrain] JSON parse error: {e}")
+                if all_steps:
+                    break
+                return None
+            except Exception as e:
+                print(f"[AIBrain] API error: {e}")
+                if all_steps:
+                    break
+                return None
+
+        if not all_steps:
             return None
-        except Exception as e:
-            print(f"[AIBrain] API error: {e}")
-            return None
+
+        step_count = len(all_steps)
+        print(f"[AIBrain] Understood: {text} -> {step_count} step(s)")
+        for i, s in enumerate(all_steps):
+            print(f"  Step {i+1}: {s}")
+
+        return {"steps": all_steps}
