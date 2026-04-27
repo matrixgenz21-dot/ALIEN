@@ -184,23 +184,23 @@ class ChatbotGUI:
         self.input_field.delete(0, "end")
         self._add_message("user", text)
 
-        # Get response in background thread
-        threading.Thread(target=self._get_response, args=(text,), daemon=True).start()
+        history_snapshot = list(self.chat_history)
+        threading.Thread(target=self._get_response, args=(text, history_snapshot), daemon=True).start()
 
-    def _get_response(self, user_text):
+    def _get_response(self, user_text, history_snapshot=None):
         if self.ai_client:
-            response = self._get_ai_response(user_text)
+            response = self._get_ai_response(user_text, history_snapshot)
         else:
             response = self._get_fallback_response(user_text)
 
         self.root.after(0, self._add_message, "bot", response)
 
-    def _get_ai_response(self, text):
+    def _get_ai_response(self, text, history_snapshot=None):
         try:
             messages = [{"role": "system", "content": BOT_PERSONALITY}]
 
-            # Add last 10 messages as context (excluding current message which we add explicitly)
-            for msg in self.chat_history[-11:-1]:
+            history = history_snapshot if history_snapshot is not None else list(self.chat_history)
+            for msg in history[-11:-1]:
                 role = "assistant" if msg["sender"] == "bot" else "user"
                 messages.append({"role": role, "content": msg["text"]})
 

@@ -263,6 +263,61 @@ def init_db():
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )""")
 
+    # ---- Emergency Triage ----
+    c.execute("""CREATE TABLE IF NOT EXISTS triage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id TEXT,
+        patient_name TEXT,
+        priority TEXT DEFAULT 'Green',
+        chief_complaint TEXT DEFAULT '',
+        vital_bp TEXT DEFAULT '',
+        vital_temp REAL DEFAULT 0,
+        vital_pulse INTEGER DEFAULT 0,
+        vital_o2 REAL DEFAULT 0,
+        arrival_mode TEXT DEFAULT 'Walk-in',
+        assigned_doctor TEXT DEFAULT '',
+        status TEXT DEFAULT 'Waiting',
+        notes TEXT DEFAULT '',
+        created_by TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+
+    # ---- Insurance Claims ----
+    c.execute("""CREATE TABLE IF NOT EXISTS insurance_claims (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        claim_id TEXT UNIQUE,
+        patient_id TEXT,
+        patient_name TEXT,
+        insurance_company TEXT DEFAULT '',
+        policy_number TEXT DEFAULT '',
+        claim_amount REAL DEFAULT 0,
+        approved_amount REAL DEFAULT 0,
+        bill_no TEXT DEFAULT '',
+        diagnosis TEXT DEFAULT '',
+        status TEXT DEFAULT 'Submitted',
+        submitted_date TEXT DEFAULT '',
+        approved_date TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        created_by TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+
+    # ---- Shift Scheduling ----
+    c.execute("""CREATE TABLE IF NOT EXISTS shifts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        staff_name TEXT NOT NULL,
+        staff_role TEXT DEFAULT 'Doctor',
+        department TEXT DEFAULT '',
+        shift_date TEXT NOT NULL,
+        shift_type TEXT DEFAULT 'Morning',
+        start_time TEXT DEFAULT '08:00',
+        end_time TEXT DEFAULT '16:00',
+        status TEXT DEFAULT 'Scheduled',
+        notes TEXT DEFAULT '',
+        created_by TEXT DEFAULT '',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     # ---- Audit Log ----
     c.execute("""CREATE TABLE IF NOT EXISTS audit_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -373,7 +428,7 @@ def init_db():
 def generate_id(prefix, table, id_col):
     conn = get_conn()
     c = conn.cursor()
-    c.execute(f"SELECT MAX(id) FROM {table}")
+    c.execute(f"SELECT MAX(CAST(SUBSTR({id_col}, INSTR({id_col}, '-') + 1) AS INTEGER)) FROM {table}")
     result = c.fetchone()[0]
     conn.close()
     num = (result or 0) + 1

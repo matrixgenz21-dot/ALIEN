@@ -1,257 +1,199 @@
 """
-Hospital Management System (HMS) V2 - Advanced Medical Software
+Hospital Management System (HMS) V3 - Advanced Medical Software
 By: Matrix Tech Solutions | Lahore, Pakistan
 
-Advanced Features:
+V3 Advanced Features:
 - Login System with Role-Based Access (Admin, Doctor, Pharmacist, Receptionist)
 - Patient Registration with Allergies & Chronic Conditions
 - Patient Vitals Tracking (BP, Temperature, Pulse, Weight, Sugar, O2)
+- Patient Risk Scoring (auto-flag critical vitals with color coding)
 - Patient History Timeline (all visits, tests, prescriptions)
-- Doctor Management & Revenue Dashboard
+- Doctor Management & Performance Analytics
 - Appointment System with Token/Queue + Auto-Billing
 - Pharmacy with Medicine Interaction Warnings & Auto-Reorder Alerts
+- Medicine Expiry Countdown with Visual Indicators
 - Prescription System with Drug Interaction Checks
 - Lab Reports Management
 - Bed/Ward Management (Admission/Discharge)
 - Billing & Invoicing with Print-Ready Format
+- Emergency Triage System (Red/Yellow/Green priority)
+- Insurance Claim Tracking
+- Shift Scheduling for Doctors/Staff
+- Global Smart Search (search across all modules)
 - Advanced Reports (Daily/Weekly/Monthly, Doctor Revenue, Department)
 - Database Backup & Restore
-- Audit Log (who did what, when)
-- Notification System (alerts, reminders)
+- Audit Log & Notification System
 - Excel Export for all modules
-- Professional Dark Medical Theme with Status Badges
+- Professional Dark Medical Theme with Modern UI
+- Search & Filters in EVERY module
+- Proper Scrollbars everywhere
 
 Target: Pakistani Hospitals, Clinics, Pharmacies
 Value: PKR 50,000,000+ enterprise software
-
-Usage:
-    pip install matplotlib openpyxl
-    python hospital_mgmt.py
-
-Default Login:
-    Admin:        admin / admin123
-    Doctor:       doctor / doctor123
-    Pharmacist:   pharmacist / pharma123
-    Receptionist: receptionist / reception123
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import sqlite3
-from datetime import datetime, timedelta
-import os
 import calendar
-
-from database import (DB_FILE, get_conn, init_db, generate_id,
-                      hash_password, audit_log, add_notification,
-                      backup_db, restore_db)
-from theme import COLORS as C, FONTS as F
+from datetime import datetime, timedelta
 
 try:
-    import matplotlib
-    matplotlib.use("TkAgg")
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
 
+from database import (get_conn, init_db, hash_password, generate_id,
+                       audit_log, add_notification, backup_db, restore_db)
+from theme import COLORS as C, FONTS as F
 
-# =====================================================================
-#  LOGIN WINDOW
-# =====================================================================
+
+# ============================== LOGIN ==============================
 
 class LoginWindow:
     def __init__(self):
         init_db()
         self.root = tk.Tk()
-        self.root.title("HMS Login")
-        self.root.geometry("420x480")
+        self.root.title("HMS Login - Matrix Tech Solutions")
+        self.root.geometry("420x520")
         self.root.configure(bg=C["bg"])
         self.root.resizable(False, False)
 
-        # Center window
-        self.root.update_idletasks()
-        x = (self.root.winfo_screenwidth() - 420) // 2
-        y = (self.root.winfo_screenheight() - 480) // 2
-        self.root.geometry(f"420x480+{x}+{y}")
+        tk.Frame(self.root, bg=C["primary_dark"], height=4).pack(fill="x")
 
-        # Logo
-        logo_f = tk.Frame(self.root, bg=C["primary_dark"], height=100)
-        logo_f.pack(fill="x")
-        logo_f.pack_propagate(False)
-        tk.Label(logo_f, text="HMS", bg=C["primary_dark"], fg="white",
-                 font=("Segoe UI", 36, "bold")).pack(pady=(15, 0))
-        tk.Label(logo_f, text="Hospital Management System", bg=C["primary_dark"],
-                 fg=C["primary_light"], font=("Segoe UI", 10)).pack()
+        tk.Label(self.root, text="HMS", bg=C["bg"], fg=C["primary"],
+                 font=("Segoe UI", 40, "bold")).pack(pady=(40, 0))
+        tk.Label(self.root, text="Hospital Management System V3", bg=C["bg"],
+                 fg=C["text_secondary"], font=("Segoe UI", 10)).pack()
+        tk.Label(self.root, text="Matrix Tech Solutions | Lahore", bg=C["bg"],
+                 fg=C["text_muted"], font=("Segoe UI", 8)).pack(pady=(2, 30))
 
-        # Form
         form = tk.Frame(self.root, bg=C["bg"])
-        form.pack(expand=True)
-
-        tk.Label(form, text="Sign In", bg=C["bg"], fg=C["text"],
-                 font=("Segoe UI", 18, "bold")).pack(pady=(20, 15))
+        form.pack(padx=50)
 
         tk.Label(form, text="Username", bg=C["bg"], fg=C["text_secondary"],
-                 font=F["body"]).pack(anchor="w", padx=30)
-        self.user_entry = tk.Entry(form, bg=C["input_bg"], fg=C["text"],
-                                    font=("Segoe UI", 13), relief="flat",
-                                    insertbackground=C["text"], width=28)
-        self.user_entry.pack(padx=30, ipady=8, pady=(2, 10))
-        self.user_entry.insert(0, "admin")
+                 font=F["body_small"]).pack(anchor="w", pady=(0, 3))
+        self.user_e = tk.Entry(form, bg=C["input_bg"], fg=C["text"], font=F["input"],
+                                relief="flat", insertbackground=C["text"], width=28,
+                                highlightthickness=1, highlightbackground=C["input_border"],
+                                highlightcolor=C["input_focus"])
+        self.user_e.pack(ipady=6, pady=(0, 12))
+        self.user_e.insert(0, "admin")
 
         tk.Label(form, text="Password", bg=C["bg"], fg=C["text_secondary"],
-                 font=F["body"]).pack(anchor="w", padx=30)
-        self.pass_entry = tk.Entry(form, bg=C["input_bg"], fg=C["text"],
-                                    font=("Segoe UI", 13), relief="flat",
-                                    insertbackground=C["text"], show="*", width=28)
-        self.pass_entry.pack(padx=30, ipady=8, pady=(2, 15))
-        self.pass_entry.insert(0, "admin123")
-        self.pass_entry.bind("<Return>", lambda e: self._login())
+                 font=F["body_small"]).pack(anchor="w", pady=(0, 3))
+        self.pass_e = tk.Entry(form, bg=C["input_bg"], fg=C["text"], font=F["input"],
+                                relief="flat", show="*", insertbackground=C["text"], width=28,
+                                highlightthickness=1, highlightbackground=C["input_border"],
+                                highlightcolor=C["input_focus"])
+        self.pass_e.pack(ipady=6, pady=(0, 18))
+        self.pass_e.insert(0, "admin123")
 
-        tk.Button(form, text="Login", bg=C["accent"], fg="black",
-                  font=("Segoe UI", 13, "bold"), relief="flat",
-                  padx=40, pady=8, command=self._login, cursor="hand2").pack(pady=5)
+        tk.Button(self.root, text="Login", bg=C["primary"], fg="white",
+                  font=("Segoe UI", 13, "bold"), relief="flat", padx=30, pady=8,
+                  command=self._login, cursor="hand2",
+                  activebackground=C["primary_dark"]).pack(pady=(0, 15))
 
-        self.status = tk.Label(form, text="", bg=C["bg"], fg=C["danger"], font=F["body_small"])
-        self.status.pack(pady=5)
+        self.msg = tk.Label(self.root, text="", bg=C["bg"], fg=C["danger"], font=F["body_small"])
+        self.msg.pack()
 
-        # Default credentials hint
-        hint = tk.Label(form, text="Default: admin/admin123 | doctor/doctor123\npharma/pharma123 | receptionist/reception123",
-                        bg=C["bg"], fg=C["text_muted"], font=("Segoe UI", 8), justify="center")
-        hint.pack(pady=(5, 0))
-
-        tk.Label(self.root, text="Matrix Tech Solutions | Lahore, Pakistan",
-                 bg=C["bg"], fg=C["text_muted"], font=("Segoe UI", 8)).pack(side="bottom", pady=8)
+        self.pass_e.bind("<Return>", lambda e: self._login())
 
     def _login(self):
-        username = self.user_entry.get().strip()
-        password = self.pass_entry.get().strip()
-        if not username or not password:
-            self.status.config(text="Enter username and password!")
+        uname = self.user_e.get().strip()
+        pw = self.pass_e.get().strip()
+        if not uname or not pw:
+            self.msg.config(text="Enter username and password!")
             return
-
         conn = get_conn()
         c = conn.cursor()
-        c.execute("SELECT id, username, password_hash, full_name, role, department, status FROM users WHERE username=?",
-                 (username,))
+        c.execute("SELECT id, username, full_name, role, department FROM users WHERE username=? AND password_hash=? AND status='Active'",
+                 (uname, hash_password(pw)))
         user = c.fetchone()
-        conn.close()
-
-        if not user:
-            self.status.config(text="User not found!")
-            return
-        if user[2] != hash_password(password):
-            self.status.config(text="Incorrect password!")
-            return
-        if user[6] != "Active":
-            self.status.config(text="Account is disabled!")
-            return
-
-        # Update last login
-        conn = get_conn()
-        try:
-            c = conn.cursor()
+        if user:
             c.execute("UPDATE users SET last_login=? WHERE id=?",
                      (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user[0]))
             conn.commit()
-        finally:
             conn.close()
-
-        audit_log(username, "Login", "Auth", f"{user[3]} logged in as {user[4]}")
-
-        user_info = {
-            "id": user[0], "username": user[1], "name": user[3],
-            "role": user[4], "department": user[5]
-        }
-        self.root.destroy()
-        app = HospitalApp(user_info)
-        app.run()
+            audit_log(uname, "Login", "Auth", f"Role: {user[3]}")
+            self.root.destroy()
+            app = HospitalApp({"id": user[0], "username": user[1], "name": user[2], "role": user[3], "dept": user[4]})
+            app.run()
+        else:
+            conn.close()
+            self.msg.config(text="Invalid username or password!")
 
     def run(self):
         self.root.mainloop()
 
 
-# =====================================================================
-#  MAIN APPLICATION
-# =====================================================================
+# ============================== MAIN APP ==============================
 
 class HospitalApp:
     def __init__(self, user):
-        init_db()
         self.user = user
-
         self.root = tk.Tk()
-        self.root.title(f"HMS - Hospital Management System | {user['name']} ({user['role']})")
-        self.root.geometry("1400x850")
+        self.root.title(f"HMS V3 - {user['name']} ({user['role']})")
+        self.root.geometry("1280x760")
         self.root.configure(bg=C["bg"])
-        self.root.minsize(1100, 700)
+        self.root.state("zoomed") if hasattr(self.root, 'state') else None
 
         self._setup_styles()
         self._create_sidebar()
         self._create_main()
-        self._check_auto_alerts()
         self._show_dashboard()
+        self._check_auto_alerts()
 
     def _setup_styles(self):
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview",
-                         background=C["table_row1"], foreground=C["text"],
-                         fieldbackground=C["table_row1"], borderwidth=0,
-                         font=F["table_body"], rowheight=30)
-        style.configure("Treeview.Heading",
-                         background=C["table_header"], foreground=C["primary"],
+        style.configure("Treeview", background=C["table_row1"], foreground=C["text"],
+                         fieldbackground=C["table_row1"], font=F["table_body"], rowheight=26,
+                         borderwidth=0)
+        style.configure("Treeview.Heading", background=C["table_header"], foreground=C["primary"],
                          font=F["table_header"], borderwidth=0)
-        style.map("Treeview", background=[("selected", C["table_selected"])])
+        style.map("Treeview", background=[("selected", C["table_selected"])],
+                  foreground=[("selected", C["text_bright"])])
+        style.configure("TCombobox", fieldbackground=C["input_bg"], background=C["input_bg"],
+                         foreground=C["text"])
+        style.configure("TNotebook", background=C["bg"], borderwidth=0)
+        style.configure("TNotebook.Tab", background=C["card"], foreground=C["text_secondary"],
+                         padding=[12, 6])
+        style.map("TNotebook.Tab", background=[("selected", C["primary_dark"])],
+                  foreground=[("selected", "white")])
 
     def _check_auto_alerts(self):
-        """Auto-generate pharmacy & expiry alerts on startup."""
         conn = get_conn()
         c = conn.cursor()
         today = datetime.now().strftime("%Y-%m-%d")
-
-        # Low stock
-        c.execute("SELECT name, stock, min_stock, supplier FROM medicines WHERE stock <= min_stock AND status='Active'")
-        for name, stock, minst, supplier in c.fetchall():
-            add_notification(
-                f"Low Stock: {name}",
-                f"Only {stock} left (min: {minst}). Supplier: {supplier or 'N/A'}. Reorder needed!",
-                "warning"
-            )
-
-        # Expiring in 30 days
         exp_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         c.execute("SELECT name, expiry_date FROM medicines WHERE expiry_date != '' AND expiry_date <= ? AND expiry_date > ? AND status='Active'",
                  (exp_date, today))
         for name, exp in c.fetchall():
             add_notification(f"Expiring Soon: {name}", f"Expires on {exp}", "danger")
-
-        # Already expired
         c.execute("SELECT name, expiry_date FROM medicines WHERE expiry_date != '' AND expiry_date <= ? AND status='Active'",
                  (today,))
         for name, exp in c.fetchall():
             add_notification(f"EXPIRED: {name}", f"Expired on {exp}! Remove from shelf!", "danger")
-
         conn.close()
 
     # ============================== SIDEBAR ==============================
 
     def _create_sidebar(self):
-        self.sidebar = tk.Frame(self.root, bg=C["sidebar"], width=240)
+        self.sidebar = tk.Frame(self.root, bg=C["sidebar"], width=250)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        # Logo
         logo_f = tk.Frame(self.sidebar, bg=C["primary_dark"], height=70)
         logo_f.pack(fill="x")
         logo_f.pack_propagate(False)
-        tk.Label(logo_f, text="HMS", bg=C["primary_dark"], fg="white",
-                 font=("Segoe UI", 26, "bold")).pack(pady=(10, 0))
+        tk.Label(logo_f, text="HMS V3", bg=C["primary_dark"], fg="white",
+                 font=("Segoe UI", 24, "bold")).pack(pady=(10, 0))
         tk.Label(logo_f, text="Hospital Management System", bg=C["primary_dark"],
                  fg=C["primary_light"], font=("Segoe UI", 8)).pack()
 
-        # User info
         uf = tk.Frame(self.sidebar, bg=C["card"], padx=12, pady=8)
         uf.pack(fill="x", padx=8, pady=(8, 0))
         tk.Label(uf, text=self.user["name"], bg=C["card"], fg=C["text"],
@@ -261,13 +203,33 @@ class HospitalApp:
         tk.Label(uf, text=self.user["role"], bg=C["card"], fg=rc,
                  font=("Segoe UI", 9)).pack(anchor="w")
 
-        tk.Frame(self.sidebar, bg=C["divider"], height=1).pack(fill="x", pady=6)
+        # Global Smart Search
+        sf = tk.Frame(self.sidebar, bg=C["sidebar"], padx=8, pady=6)
+        sf.pack(fill="x")
+        self.global_search = tk.Entry(sf, bg=C["input_bg"], fg=C["text"], font=("Segoe UI", 9),
+                                       relief="flat", insertbackground=C["text"],
+                                       highlightthickness=1, highlightbackground=C["input_border"],
+                                       highlightcolor=C["primary"])
+        self.global_search.pack(fill="x", ipady=5)
+        self.global_search.insert(0, "Smart Search...")
+        self.global_search.bind("<FocusIn>", lambda e: self.global_search.delete(0, "end") if "Search" in self.global_search.get() else None)
+        self.global_search.bind("<Return>", lambda e: self._show_smart_search())
 
-        # Menu
+        tk.Frame(self.sidebar, bg=C["divider"], height=1).pack(fill="x", pady=4)
+
+        # Scrollable menu
+        menu_canvas = tk.Canvas(self.sidebar, bg=C["sidebar"], highlightthickness=0)
+        menu_scroll = ttk.Scrollbar(self.sidebar, orient="vertical", command=menu_canvas.yview)
+        menu_inner = tk.Frame(menu_canvas, bg=C["sidebar"])
+        menu_inner.bind("<Configure>", lambda e: menu_canvas.configure(scrollregion=menu_canvas.bbox("all")))
+        menu_canvas.create_window((0, 0), window=menu_inner, anchor="nw", width=234)
+        menu_canvas.configure(yscrollcommand=menu_scroll.set)
+        menu_canvas.pack(side="left", fill="both", expand=True)
+
         menu_items = [
             ("  Dashboard", "dash", self._show_dashboard, True),
             ("  Patients", "patients", self._show_patients, True),
-            ("  Vitals", "vitals", self._show_vitals, True),
+            ("  Vitals & Risk", "vitals", self._show_vitals, True),
             ("  Doctors", "doctors", self._show_doctors, self.user["role"] in ["Admin", "Doctor"]),
             ("  Appointments", "appt", self._show_appointments, True),
             ("  Pharmacy", "pharma", self._show_pharmacy, self.user["role"] in ["Admin", "Pharmacist"]),
@@ -275,6 +237,9 @@ class HospitalApp:
             ("  Lab Reports", "lab", self._show_lab, True),
             ("  Bed Management", "beds", self._show_beds, True),
             ("  Billing", "billing", self._show_billing, True),
+            ("  Emergency Triage", "triage", self._show_triage, True),
+            ("  Insurance Claims", "insurance", self._show_insurance, self.user["role"] in ["Admin", "Receptionist"]),
+            ("  Shift Schedule", "shifts", self._show_shifts, self.user["role"] in ["Admin", "Doctor"]),
             ("  Calendar", "cal", self._show_calendar, True),
             ("  Reports", "reports", self._show_reports, self.user["role"] == "Admin"),
             ("  Notifications", "notif", self._show_notifications, True),
@@ -286,23 +251,23 @@ class HospitalApp:
             if not visible:
                 continue
             btn = tk.Button(
-                self.sidebar, text=text, bg=C["sidebar"], fg=C["text_secondary"],
-                font=F["menu"], relief="flat", anchor="w", padx=18, pady=6,
+                menu_inner, text=text, bg=C["sidebar"], fg=C["text_secondary"],
+                font=F["menu"], relief="flat", anchor="w", padx=18, pady=5,
                 activebackground=C["sidebar_hover"], activeforeground=C["primary"],
                 cursor="hand2", command=cmd, borderwidth=0
             )
-            btn.pack(fill="x", padx=6, pady=1)
+            btn.pack(fill="x", padx=4, pady=1)
             self.menu_btns[key] = btn
 
-        # Logout
+        # Logout at bottom
         bottom = tk.Frame(self.sidebar, bg=C["sidebar"])
-        bottom.pack(side="bottom", fill="x", pady=8)
-        tk.Frame(bottom, bg=C["divider"], height=1).pack(fill="x", padx=12, pady=(0, 6))
+        bottom.pack(side="bottom", fill="x", pady=6)
+        tk.Frame(bottom, bg=C["divider"], height=1).pack(fill="x", padx=12, pady=(0, 4))
         tk.Button(bottom, text="  Logout", bg=C["sidebar"], fg=C["danger"],
                   font=F["menu"], relief="flat", anchor="w", padx=18,
                   command=self._logout, cursor="hand2", borderwidth=0).pack(fill="x", padx=6)
         tk.Label(bottom, text="Matrix Tech Solutions\nLahore, Pakistan", bg=C["sidebar"],
-                 fg=C["text_muted"], font=("Segoe UI", 7), justify="center").pack(pady=3)
+                 fg=C["text_muted"], font=("Segoe UI", 7), justify="center").pack(pady=2)
 
     def _set_active(self, key):
         for k, btn in self.menu_btns.items():
@@ -329,7 +294,7 @@ class HospitalApp:
 
     def _header(self, title, subtitle=""):
         h = tk.Frame(self.main, bg=C["bg"])
-        h.pack(fill="x", padx=25, pady=(20, 12))
+        h.pack(fill="x", padx=25, pady=(15, 8))
         tk.Label(h, text=title, bg=C["bg"], fg=C["text"],
                  font=F["header"]).pack(side="left")
         if subtitle:
@@ -345,7 +310,7 @@ class HospitalApp:
         return f
 
     def _stat_card(self, parent, row, col, label, value, color, icon=""):
-        card = tk.Frame(parent, bg=C["card"], padx=18, pady=12)
+        card = tk.Frame(parent, bg=C["card"], padx=16, pady=10)
         card.grid(row=row, column=col, padx=4, pady=4, sticky="nsew")
         if icon:
             tk.Label(card, text=icon, bg=C["card"], fg=color,
@@ -367,12 +332,62 @@ class HospitalApp:
             entry.insert(0, default)
         return entry
 
+    def _scrollable_tree(self, parent, cols, widths, height=16):
+        """Create a treeview with both vertical and horizontal scrollbar."""
+        frame = tk.Frame(parent, bg=C["card"])
+        tree = ttk.Treeview(frame, columns=cols, show="headings", height=height)
+        vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        hsb = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        for col, w in zip(cols, widths):
+            tree.heading(col, text=col)
+            tree.column(col, width=w, minwidth=30)
+        tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        frame.grid_rowconfigure(0, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+        return frame, tree
+
+    def _search_frame(self, parent, placeholder="Search...", filter_options=None):
+        """Create search bar with optional filter dropdowns."""
+        sf = tk.Frame(parent, bg=C["bg"])
+        search = tk.Entry(sf, bg=C["input_bg"], fg=C["text"], font=F["input"],
+                          relief="flat", insertbackground=C["text"],
+                          highlightthickness=1, highlightbackground=C["input_border"],
+                          highlightcolor=C["primary"])
+        search.pack(side="left", fill="x", expand=True, ipady=5, padx=(0, 6))
+        search.insert(0, placeholder)
+        search.bind("<FocusIn>", lambda e: search.delete(0, "end") if placeholder in search.get() else None)
+
+        filters = {}
+        if filter_options:
+            for label, values in filter_options:
+                var = tk.StringVar(value=f"All {label}")
+                cb = ttk.Combobox(sf, textvariable=var,
+                                   values=[f"All {label}"] + values, state="readonly", width=12)
+                cb.pack(side="left", padx=2)
+                filters[label] = var
+
+        return sf, search, filters
+
     # ============================== DASHBOARD ==============================
 
     def _show_dashboard(self):
         self._clear()
         self._set_active("dash")
         h = self._header("Dashboard", datetime.now().strftime("%A, %d %B %Y"))
+
+        # Scrollable dashboard
+        canvas = tk.Canvas(self.main, bg=C["bg"], highlightthickness=0)
+        scroll = ttk.Scrollbar(self.main, orient="vertical", command=canvas.yview)
+        inner = tk.Frame(canvas, bg=C["bg"])
+        inner.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=inner, anchor="nw")
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="right", fill="y")
+        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
         conn = get_conn()
         c = conn.cursor()
@@ -414,10 +429,14 @@ class HospitalApp:
         c.execute("SELECT COUNT(*) FROM notifications WHERE is_read=0")
         unread = c.fetchone()[0]
 
+        # Triage counts
+        c.execute("SELECT COUNT(*) FROM triage WHERE status='Waiting' AND priority='Red'")
+        triage_red = c.fetchone()[0]
+
         conn.close()
 
         # Stats
-        grid = tk.Frame(self.main, bg=C["bg"])
+        grid = tk.Frame(inner, bg=C["bg"])
         grid.pack(fill="x", padx=25)
         for i in range(6):
             grid.grid_columnconfigure(i, weight=1)
@@ -434,13 +453,12 @@ class HospitalApp:
         self._stat_card(grid, 1, 2, "Low Stock Meds", str(low_stock), C["danger"] if low_stock else C["success"])
         self._stat_card(grid, 1, 3, "Pending Labs", str(pending_labs), C["purple"])
         self._stat_card(grid, 1, 4, "Monthly Revenue", f"Rs {month_rev:,.0f}", C["accent"])
-        self._stat_card(grid, 1, 5, f"Logged: {self.user['name'][:12]}", self.user["role"], C["info"])
+        self._stat_card(grid, 1, 5, "ER Critical", str(triage_red), C["danger"] if triage_red else C["success"])
 
         # Bottom panels
-        bottom = tk.Frame(self.main, bg=C["bg"])
+        bottom = tk.Frame(inner, bg=C["bg"])
         bottom.pack(fill="both", expand=True, padx=25, pady=(8, 15))
 
-        # Today's appointments
         left = tk.Frame(bottom, bg=C["card"], padx=12, pady=10)
         left.pack(side="left", fill="both", expand=True, padx=(0, 6))
 
@@ -456,18 +474,14 @@ class HospitalApp:
 
         if rows:
             cols = ("Token", "Patient", "Doctor", "Dept", "Time", "Status")
-            tree = ttk.Treeview(left, columns=cols, show="headings", height=7)
-            for col, w in zip(cols, [45, 130, 120, 90, 55, 75]):
-                tree.heading(col, text=col)
-                tree.column(col, width=w, minwidth=30)
+            tf, tree = self._scrollable_tree(left, cols, [45, 130, 120, 90, 55, 75], height=7)
             for r in rows:
                 tree.insert("", "end", values=r)
-            tree.pack(fill="both", expand=True)
+            tf.pack(fill="both", expand=True)
         else:
             tk.Label(left, text="No appointments today.", bg=C["card"],
                      fg=C["text_muted"], font=F["body"]).pack(pady=25)
 
-        # Alerts + Quick Actions
         right = tk.Frame(bottom, bg=C["card"], padx=12, pady=10, width=280)
         right.pack(side="right", fill="y")
         right.pack_propagate(False)
@@ -478,16 +492,17 @@ class HospitalApp:
         actions = [
             ("+ Register Patient", C["accent"], self._show_patients),
             ("+ New Appointment", C["primary"], self._show_appointments),
+            ("+ Emergency Triage", C["danger"], self._show_triage),
             ("+ Pharmacy Sale", C["warning"], self._show_pharmacy),
             ("+ Create Bill", C["info"], self._show_billing),
         ]
         for text, color, cmd in actions:
             tk.Button(right, text=text, bg=color, fg="black", font=("Segoe UI", 10, "bold"),
-                      relief="flat", padx=10, pady=5, cursor="hand2",
+                      relief="flat", padx=10, pady=4, cursor="hand2",
                       command=cmd).pack(fill="x", pady=2)
 
         tk.Label(right, text="Recent Alerts", bg=C["card"], fg=C["text"],
-                 font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(12, 5))
+                 font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(10, 5))
 
         conn = get_conn()
         c = conn.cursor()
@@ -497,12 +512,101 @@ class HospitalApp:
 
         cat_colors = {"info": C["info"], "warning": C["warning"], "danger": C["danger"], "success": C["success"]}
         for title, cat in notifs:
-            nf = tk.Frame(right, bg=C["bg_secondary"], padx=8, pady=5)
+            nf = tk.Frame(right, bg=C["bg_secondary"], padx=8, pady=4)
             nf.pack(fill="x", pady=1)
             tk.Label(nf, text="●", bg=C["bg_secondary"], fg=cat_colors.get(cat, C["text_muted"]),
                      font=("Segoe UI", 8)).pack(side="left")
             tk.Label(nf, text=title[:35], bg=C["bg_secondary"], fg=C["text_secondary"],
                      font=("Segoe UI", 8)).pack(side="left", padx=5)
+
+    # ============================== GLOBAL SMART SEARCH ==============================
+
+    def _show_smart_search(self):
+        query = self.global_search.get().strip()
+        if not query or "Search" in query:
+            return
+        self._clear()
+        self._set_active("")
+        h = self._header("Smart Search", f'Results for "{query}"')
+
+        canvas = tk.Canvas(self.main, bg=C["bg"], highlightthickness=0)
+        scroll = ttk.Scrollbar(self.main, orient="vertical", command=canvas.yview)
+        inner = tk.Frame(canvas, bg=C["bg"])
+        inner.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=inner, anchor="nw")
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side="left", fill="both", expand=True, padx=25)
+        scroll.pack(side="right", fill="y")
+
+        q = f"%{query}%"
+        conn = get_conn()
+        c = conn.cursor()
+
+        # Patients
+        c.execute("SELECT patient_id, name, phone, blood_group, patient_type FROM patients WHERE name LIKE ? OR patient_id LIKE ? OR cnic LIKE ? OR phone LIKE ?", (q, q, q, q))
+        pats = c.fetchall()
+        if pats:
+            tk.Label(inner, text=f"Patients ({len(pats)})", bg=C["bg"], fg=C["accent"],
+                     font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(10, 4))
+            for p in pats[:10]:
+                f = tk.Frame(inner, bg=C["card"], padx=12, pady=6)
+                f.pack(fill="x", pady=1)
+                tk.Label(f, text=f"{p[1]} | {p[0]} | {p[2]} | {p[3]} | {p[4]}",
+                         bg=C["card"], fg=C["text"], font=F["body"]).pack(anchor="w")
+
+        # Doctors
+        c.execute("SELECT doctor_id, name, specialization, department FROM doctors WHERE name LIKE ? OR specialization LIKE ? OR department LIKE ?", (q, q, q))
+        docs = c.fetchall()
+        if docs:
+            tk.Label(inner, text=f"Doctors ({len(docs)})", bg=C["bg"], fg=C["info"],
+                     font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(10, 4))
+            for d in docs[:10]:
+                f = tk.Frame(inner, bg=C["card"], padx=12, pady=6)
+                f.pack(fill="x", pady=1)
+                tk.Label(f, text=f"{d[1]} | {d[0]} | {d[2]} | {d[3]}",
+                         bg=C["card"], fg=C["text"], font=F["body"]).pack(anchor="w")
+
+        # Medicines
+        c.execute("SELECT name, generic_name, category, stock FROM medicines WHERE name LIKE ? OR generic_name LIKE ? OR category LIKE ?", (q, q, q))
+        meds = c.fetchall()
+        if meds:
+            tk.Label(inner, text=f"Medicines ({len(meds)})", bg=C["bg"], fg=C["warning"],
+                     font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(10, 4))
+            for m in meds[:10]:
+                f = tk.Frame(inner, bg=C["card"], padx=12, pady=6)
+                f.pack(fill="x", pady=1)
+                tk.Label(f, text=f"{m[0]} | {m[1]} | {m[2]} | Stock: {m[3]}",
+                         bg=C["card"], fg=C["text"], font=F["body"]).pack(anchor="w")
+
+        # Appointments
+        c.execute("SELECT patient_name, doctor_name, date, status FROM appointments WHERE patient_name LIKE ? OR doctor_name LIKE ?", (q, q))
+        appts = c.fetchall()
+        if appts:
+            tk.Label(inner, text=f"Appointments ({len(appts)})", bg=C["bg"], fg=C["primary"],
+                     font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(10, 4))
+            for a in appts[:10]:
+                f = tk.Frame(inner, bg=C["card"], padx=12, pady=6)
+                f.pack(fill="x", pady=1)
+                tk.Label(f, text=f"{a[0]} → {a[1]} | {a[2]} | {a[3]}",
+                         bg=C["card"], fg=C["text"], font=F["body"]).pack(anchor="w")
+
+        # Bills
+        c.execute("SELECT bill_no, patient_name, grand_total, payment_status FROM bills WHERE bill_no LIKE ? OR patient_name LIKE ?", (q, q))
+        bills = c.fetchall()
+        if bills:
+            tk.Label(inner, text=f"Bills ({len(bills)})", bg=C["bg"], fg=C["purple"],
+                     font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(10, 4))
+            for b in bills[:10]:
+                f = tk.Frame(inner, bg=C["card"], padx=12, pady=6)
+                f.pack(fill="x", pady=1)
+                tk.Label(f, text=f"{b[0]} | {b[1]} | Rs {b[2]:,.0f} | {b[3]}",
+                         bg=C["card"], fg=C["text"], font=F["body"]).pack(anchor="w")
+
+        conn.close()
+
+        if not pats and not docs and not meds and not appts and not bills:
+            tk.Label(inner, text="No results found.", bg=C["bg"], fg=C["text_muted"],
+                     font=("Segoe UI", 14)).pack(pady=40)
 
     # ============================== PATIENTS ==============================
 
@@ -515,30 +619,24 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=14, pady=4,
                   command=self._register_patient, cursor="hand2").pack(side="right")
 
-        sf = tk.Frame(self.main, bg=C["bg"])
-        sf.pack(fill="x", padx=25, pady=(0, 8))
-        self.pat_search = tk.Entry(sf, bg=C["input_bg"], fg=C["text"], font=F["input"],
-                                    relief="flat", insertbackground=C["text"],
-                                    highlightthickness=1, highlightbackground=C["input_border"])
-        self.pat_search.pack(side="left", fill="x", expand=True, ipady=6)
-        self.pat_search.insert(0, "Search by name, CNIC, patient ID, phone...")
-        self.pat_search.bind("<FocusIn>", lambda e: self.pat_search.delete(0, "end") if "Search" in self.pat_search.get() else None)
+        sf, self.pat_search, self.pat_filters = self._search_frame(
+            self.main, "Search by name, CNIC, ID, phone...",
+            [("Gender", ["Male", "Female", "Other"]),
+             ("Blood", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
+             ("Type", ["OPD", "IPD", "Emergency"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
         self.pat_search.bind("<KeyRelease>", lambda e: self._load_patients())
+        for fv in self.pat_filters.values():
+            fv.trace_add("write", lambda *a: self._load_patients())
 
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("ID", "Name", "Father", "CNIC", "Age", "Gender", "Phone", "Type", "Blood", "Allergies", "Status")
-        self.pat_tree = ttk.Treeview(tf, columns=cols, show="headings", height=16)
-        widths = [80, 140, 110, 125, 35, 55, 95, 45, 40, 90, 55]
-        for col, w in zip(cols, widths):
-            self.pat_tree.heading(col, text=col)
-            self.pat_tree.column(col, width=w, minwidth=30)
-
-        sb = ttk.Scrollbar(tf, orient="vertical", command=self.pat_tree.yview)
-        self.pat_tree.configure(yscrollcommand=sb.set)
-        self.pat_tree.pack(side="left", fill="both", expand=True)
-        sb.pack(side="right", fill="y")
+        self.pat_frame, self.pat_tree = self._scrollable_tree(tf, cols,
+            [80, 140, 110, 125, 35, 55, 95, 45, 40, 90, 55], height=16)
+        self.pat_frame.pack(fill="both", expand=True)
         self.pat_tree.bind("<Double-1>", lambda e: self._patient_detail())
 
         tk.Label(tf, text="Double-click for patient details & history",
@@ -563,9 +661,22 @@ class HospitalApp:
         else:
             c.execute("""SELECT patient_id, name, father_name, cnic, age, gender, phone, patient_type, blood_group, allergies, status
                         FROM patients ORDER BY id DESC""")
-        for r in c.fetchall():
-            self.pat_tree.insert("", "end", values=r)
+        rows = c.fetchall()
         conn.close()
+
+        # Apply filters
+        gender_f = self.pat_filters.get("Gender", tk.StringVar()).get()
+        blood_f = self.pat_filters.get("Blood", tk.StringVar()).get()
+        type_f = self.pat_filters.get("Type", tk.StringVar()).get()
+
+        for r in rows:
+            if "All" not in gender_f and r[5] != gender_f:
+                continue
+            if "All" not in blood_f and r[8] != blood_f:
+                continue
+            if "All" not in type_f and r[7] != type_f:
+                continue
+            self.pat_tree.insert("", "end", values=r)
 
     def _register_patient(self):
         d = tk.Toplevel(self.root)
@@ -606,7 +717,6 @@ class HospitalApp:
         for label, key, default, row in defs:
             fields[key] = self._make_entry(form, label, default, row)
 
-        # Gender
         tk.Label(form, text="Gender", bg=C["bg"], fg=C["text_secondary"],
                  font=F["body_small"]).grid(row=11, column=0, sticky="w", pady=(6, 2), padx=5)
         gender_var = tk.StringVar(value="Male")
@@ -617,7 +727,6 @@ class HospitalApp:
                            fg=C["text"], selectcolor=C["input_bg"], font=F["body_small"],
                            activebackground=C["bg"]).pack(side="left", padx=8)
 
-        # Blood group
         tk.Label(form, text="Blood Group", bg=C["bg"], fg=C["text_secondary"],
                  font=F["body_small"]).grid(row=12, column=0, sticky="w", pady=(6, 2), padx=5)
         blood_var = tk.StringVar(value="")
@@ -625,7 +734,6 @@ class HospitalApp:
                       values=["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
                       state="readonly").grid(row=12, column=1, sticky="ew", padx=5)
 
-        # Type
         tk.Label(form, text="Patient Type", bg=C["bg"], fg=C["text_secondary"],
                  font=F["body_small"]).grid(row=13, column=0, sticky="w", pady=(6, 2), padx=5)
         type_var = tk.StringVar(value="OPD")
@@ -678,11 +786,10 @@ class HospitalApp:
 
         d = tk.Toplevel(self.root)
         d.title(f"Patient: {p[2]} ({pid})")
-        d.geometry("700x600")
+        d.geometry("750x620")
         d.configure(bg=C["bg"])
         d.transient(self.root)
 
-        # Header
         hdr = tk.Frame(d, bg=C["primary_dark"], padx=15, pady=10)
         hdr.pack(fill="x")
         tk.Label(hdr, text=f"{p[2]}  |  {pid}", bg=C["primary_dark"], fg="white",
@@ -690,7 +797,12 @@ class HospitalApp:
         tk.Label(hdr, text=f"{p[6]} | {p[12]} | Blood: {p[10]}", bg=C["primary_dark"],
                  fg=C["primary_light"], font=("Segoe UI", 10)).pack(side="right")
 
-        # Tabs
+        # Risk score
+        risk, risk_color = self._calc_risk(pid, c)
+        if risk != "N/A":
+            tk.Label(hdr, text=f"  RISK: {risk}  ", bg=risk_color, fg="white" if risk != "Low" else "black",
+                     font=("Segoe UI", 10, "bold")).pack(side="right", padx=10)
+
         nb = ttk.Notebook(d)
         nb.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -712,12 +824,9 @@ class HospitalApp:
             tk.Label(info_f, text=str(val or "-"), bg=C["bg"], fg=C["text"],
                      font=("Segoe UI", 10, "bold")).grid(row=i, column=1, sticky="w", padx=10, pady=3)
 
-        # Tab 2: Visit History (Timeline)
+        # Tab 2: Visit History
         hist_f = tk.Frame(nb, bg=C["bg"])
         nb.add(hist_f, text="  History  ")
-
-        tk.Label(hist_f, text="Visit & Treatment Timeline", bg=C["bg"], fg=C["primary"],
-                 font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=15, pady=8)
 
         hist_canvas = tk.Canvas(hist_f, bg=C["bg"], highlightthickness=0)
         hist_scroll = ttk.Scrollbar(hist_f, orient="vertical", command=hist_canvas.yview)
@@ -728,7 +837,6 @@ class HospitalApp:
         hist_canvas.pack(side="left", fill="both", expand=True)
         hist_scroll.pack(side="right", fill="y")
 
-        # Appointments
         c.execute("SELECT date, doctor_name, department, status, fee FROM appointments WHERE patient_id=? ORDER BY date DESC", (pid,))
         for row in c.fetchall():
             ef = tk.Frame(hist_inner, bg=C["card"], padx=10, pady=6)
@@ -738,7 +846,6 @@ class HospitalApp:
             tk.Label(ef, text=f"Dr. {row[1]} ({row[2]}) - {row[3]} - Rs {row[4]:,.0f}",
                      bg=C["card"], fg=C["text_secondary"], font=("Segoe UI", 9)).pack(side="left", padx=10)
 
-        # Prescriptions
         c.execute("SELECT created_at, doctor_name, diagnosis, medicines FROM prescriptions WHERE patient_id=? ORDER BY id DESC", (pid,))
         for row in c.fetchall():
             ef = tk.Frame(hist_inner, bg=C["card"], padx=10, pady=6)
@@ -748,7 +855,6 @@ class HospitalApp:
             tk.Label(ef, text=f"Dr. {row[1]} | {row[2][:40]}", bg=C["card"],
                      fg=C["text_secondary"], font=("Segoe UI", 9)).pack(side="left", padx=10)
 
-        # Lab tests
         c.execute("SELECT created_at, test_name, status, result FROM lab_tests WHERE patient_id=? ORDER BY id DESC", (pid,))
         for row in c.fetchall():
             ef = tk.Frame(hist_inner, bg=C["card"], padx=10, pady=6)
@@ -769,52 +875,117 @@ class HospitalApp:
 
         if vitals:
             vt_cols = ("BP", "Temp", "Pulse", "Weight", "Sugar", "O2", "Date")
-            vt_tree = ttk.Treeview(vit_f, columns=vt_cols, show="headings", height=8)
-            for col, w in zip(vt_cols, [80, 60, 55, 60, 60, 55, 110]):
-                vt_tree.heading(col, text=col)
-                vt_tree.column(col, width=w, minwidth=30)
+            vtf, vt_tree = self._scrollable_tree(vit_f, vt_cols, [80, 60, 55, 60, 60, 55, 110], height=8)
             for v in vitals:
                 vt_tree.insert("", "end", values=(v[0] or "-", f"{v[1]:.1f}" if v[1] else "-",
                                                    v[2] or "-", f"{v[3]:.1f}" if v[3] else "-",
                                                    f"{v[4]:.0f}" if v[4] else "-",
                                                    f"{v[5]:.0f}%" if v[5] else "-", v[6][:16]))
-            vt_tree.pack(fill="both", expand=True, padx=10, pady=10)
+            vtf.pack(fill="both", expand=True, padx=10, pady=10)
         else:
-            tk.Label(vit_f, text="No vitals recorded yet.\nGo to Vitals module to record.",
+            tk.Label(vit_f, text="No vitals recorded yet.",
                      bg=C["bg"], fg=C["text_muted"], font=F["body"]).pack(pady=30)
 
-    # ============================== VITALS ==============================
+    # ============================== PATIENT RISK SCORING ==============================
+
+    def _calc_risk(self, patient_id, cursor):
+        cursor.execute("""SELECT blood_pressure, temperature, pulse, blood_sugar, oxygen_level
+                         FROM patient_vitals WHERE patient_id=? ORDER BY id DESC LIMIT 1""", (patient_id,))
+        v = cursor.fetchone()
+        if not v:
+            return "N/A", C["text_muted"]
+
+        score = 0
+        bp = v[0] or ""
+        if "/" in bp:
+            try:
+                sys_bp = int(bp.split("/")[0])
+                if sys_bp > 180 or sys_bp < 80:
+                    score += 3
+                elif sys_bp > 140 or sys_bp < 90:
+                    score += 2
+            except ValueError:
+                pass
+
+        if v[1] and (v[1] > 103 or v[1] < 95):
+            score += 3
+        elif v[1] and (v[1] > 100.4 or v[1] < 96.8):
+            score += 1
+
+        if v[2] and (v[2] > 120 or v[2] < 50):
+            score += 3
+        elif v[2] and (v[2] > 100 or v[2] < 60):
+            score += 1
+
+        if v[3] and (v[3] > 300 or v[3] < 50):
+            score += 3
+        elif v[3] and (v[3] > 180 or v[3] < 70):
+            score += 2
+
+        if v[4] and v[4] < 90:
+            score += 3
+        elif v[4] and v[4] < 95:
+            score += 2
+
+        if score >= 6:
+            return "HIGH", C["danger"]
+        elif score >= 3:
+            return "MEDIUM", C["warning"]
+        else:
+            return "Low", C["success"]
+
+    # ============================== VITALS & RISK ==============================
 
     def _show_vitals(self):
         self._clear()
         self._set_active("vitals")
-        h = self._header("Patient Vitals", "BP, Temperature, Pulse, Sugar, O2")
+        h = self._header("Patient Vitals & Risk", "BP, Temperature, Pulse, Sugar, O2 + Risk Scoring")
 
         tk.Button(h, text="+ Record Vitals", bg=C["accent"], fg="black",
                   font=F["button"], relief="flat", padx=14, pady=4,
                   command=self._record_vitals, cursor="hand2").pack(side="right")
 
+        sf, self.vit_search, self.vit_filters = self._search_frame(
+            self.main, "Search by patient name...")
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.vit_search.bind("<KeyRelease>", lambda e: self._load_vitals())
+
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
-        cols = ("ID", "Patient", "BP", "Temp (F)", "Pulse", "Weight", "Sugar", "O2 %", "Resp Rate", "Recorded By", "Date")
-        tree = ttk.Treeview(tf, columns=cols, show="headings", height=16)
-        for col, w in zip(cols, [40, 130, 80, 60, 50, 55, 55, 50, 60, 90, 100]):
-            tree.heading(col, text=col)
-            tree.column(col, width=w, minwidth=30)
+        cols = ("ID", "Patient", "BP", "Temp(F)", "Pulse", "Weight", "Sugar", "O2%", "Resp", "Risk", "Recorded By", "Date")
+        self.vit_frame, self.vit_tree = self._scrollable_tree(tf, cols,
+            [35, 120, 75, 55, 45, 50, 50, 45, 40, 55, 85, 95], height=16)
+        self.vit_frame.pack(fill="both", expand=True)
+
+        self._load_vitals()
+
+    def _load_vitals(self):
+        search = self.vit_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.vit_tree.get_children():
+            self.vit_tree.delete(item)
 
         conn = get_conn()
         c = conn.cursor()
-        c.execute("""SELECT id, patient_name, blood_pressure, temperature, pulse, weight, blood_sugar,
-                    oxygen_level, respiratory_rate, recorded_by, created_at FROM patient_vitals ORDER BY id DESC""")
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT id, patient_id, patient_name, blood_pressure, temperature, pulse, weight, blood_sugar,
+                        oxygen_level, respiratory_rate, recorded_by, created_at FROM patient_vitals
+                        WHERE patient_name LIKE ? ORDER BY id DESC""", (q,))
+        else:
+            c.execute("""SELECT id, patient_id, patient_name, blood_pressure, temperature, pulse, weight, blood_sugar,
+                        oxygen_level, respiratory_rate, recorded_by, created_at FROM patient_vitals ORDER BY id DESC""")
+
         for r in c.fetchall():
-            tree.insert("", "end", values=(r[0], r[1], r[2] or "-", f"{r[3]:.1f}" if r[3] else "-",
-                                            r[4] or "-", f"{r[5]:.1f}" if r[5] else "-",
-                                            f"{r[6]:.0f}" if r[6] else "-",
-                                            f"{r[7]:.0f}%" if r[7] else "-",
-                                            r[8] or "-", r[9], r[10][:16]))
+            risk, _ = self._calc_risk(r[1], c)
+            self.vit_tree.insert("", "end", values=(
+                r[0], r[2], r[3] or "-", f"{r[4]:.1f}" if r[4] else "-",
+                r[5] or "-", f"{r[6]:.1f}" if r[6] else "-",
+                f"{r[7]:.0f}" if r[7] else "-", f"{r[8]:.0f}%" if r[8] else "-",
+                r[9] or "-", risk, r[10], r[11][:16]))
         conn.close()
-        tree.pack(fill="both", expand=True)
 
     def _record_vitals(self):
         d = tk.Toplevel(self.root)
@@ -897,33 +1068,67 @@ class HospitalApp:
     def _show_doctors(self):
         self._clear()
         self._set_active("doctors")
-        h = self._header("Doctor Management", "Staff & Revenue")
+        h = self._header("Doctor Management", "Staff & Analytics")
 
         btn_f = tk.Frame(h, bg=C["bg"])
         btn_f.pack(side="right")
         tk.Button(btn_f, text="+ Add Doctor", bg=C["accent"], fg="black",
                   font=F["button"], relief="flat", padx=12, pady=4,
                   command=self._add_doctor, cursor="hand2").pack(side="left", padx=3)
-        tk.Button(btn_f, text="Doctor Revenue", bg=C["primary"], fg="white",
+        tk.Button(btn_f, text="Performance Analytics", bg=C["primary"], fg="white",
                   font=F["button"], relief="flat", padx=12, pady=4,
-                  command=self._doctor_revenue, cursor="hand2").pack(side="left", padx=3)
+                  command=self._doctor_analytics, cursor="hand2").pack(side="left", padx=3)
+
+        sf, self.doc_search, self.doc_filters = self._search_frame(
+            self.main, "Search by name, specialization...",
+            [("Department", self._get_departments())]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.doc_search.bind("<KeyRelease>", lambda e: self._load_doctors())
+        for fv in self.doc_filters.values():
+            fv.trace_add("write", lambda *a: self._load_doctors())
 
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("ID", "Name", "Specialization", "Department", "Qualification", "Fee", "Schedule", "Phone", "Status")
-        self.doc_tree = ttk.Treeview(tf, columns=cols, show="headings", height=16)
-        for col, w in zip(cols, [75, 140, 115, 105, 95, 75, 125, 95, 65]):
-            self.doc_tree.heading(col, text=col)
-            self.doc_tree.column(col, width=w, minwidth=35)
+        self.doc_frame, self.doc_tree = self._scrollable_tree(tf, cols,
+            [75, 140, 115, 105, 95, 75, 125, 95, 65], height=16)
+        self.doc_frame.pack(fill="both", expand=True)
+        self._load_doctors()
+
+    def _get_departments(self):
+        conn = get_conn()
+        c = conn.cursor()
+        c.execute("SELECT name FROM departments ORDER BY name")
+        depts = [r[0] for r in c.fetchall()]
+        conn.close()
+        return depts
+
+    def _load_doctors(self):
+        search = self.doc_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.doc_tree.get_children():
+            self.doc_tree.delete(item)
 
         conn = get_conn()
         c = conn.cursor()
-        c.execute("SELECT doctor_id, name, specialization, department, qualification, fee, schedule, phone, status FROM doctors ORDER BY id DESC")
-        for r in c.fetchall():
-            self.doc_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], r[4], f"Rs {r[5]:,.0f}", r[6], r[7], r[8]))
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT doctor_id, name, specialization, department, qualification, fee, schedule, phone, status
+                        FROM doctors WHERE name LIKE ? OR specialization LIKE ? ORDER BY id DESC""", (q, q))
+        else:
+            c.execute("SELECT doctor_id, name, specialization, department, qualification, fee, schedule, phone, status FROM doctors ORDER BY id DESC")
+
+        rows = c.fetchall()
         conn.close()
-        self.doc_tree.pack(fill="both", expand=True)
+
+        dept_f = self.doc_filters.get("Department", tk.StringVar()).get()
+        for r in rows:
+            if "All" not in dept_f and r[3] != dept_f:
+                continue
+            self.doc_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], r[4], f"Rs {r[5]:,.0f}", r[6], r[7], r[8]))
 
     def _add_doctor(self):
         d = tk.Toplevel(self.root)
@@ -936,11 +1141,7 @@ class HospitalApp:
         tk.Label(d, text="Add New Doctor", bg=C["bg"], fg=C["primary"],
                  font=("Segoe UI", 15, "bold")).pack(pady=(12, 8))
 
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute("SELECT name FROM departments")
-        dept_list = [r[0] for r in c.fetchall()]
-        conn.close()
+        dept_list = self._get_departments()
 
         form = tk.Frame(d, bg=C["bg"])
         form.pack(fill="x", padx=25)
@@ -992,33 +1193,34 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=20, pady=7,
                   command=save, cursor="hand2").pack(pady=10)
 
-    def _doctor_revenue(self):
+    def _doctor_analytics(self):
         d = tk.Toplevel(self.root)
-        d.title("Doctor Revenue Report")
-        d.geometry("600x400")
+        d.title("Doctor Performance Analytics")
+        d.geometry("700x500")
         d.configure(bg=C["bg"])
         d.transient(self.root)
 
-        tk.Label(d, text="Doctor-wise Revenue (This Month)", bg=C["bg"], fg=C["primary"],
-                 font=("Segoe UI", 15, "bold")).pack(pady=12)
+        tk.Label(d, text="Doctor Performance Analytics", bg=C["bg"], fg=C["primary"],
+                 font=("Segoe UI", 16, "bold")).pack(pady=12)
 
         month = datetime.now().strftime("%Y-%m")
         conn = get_conn()
         c = conn.cursor()
-        c.execute("""SELECT doctor_name, COUNT(*), SUM(fee) FROM appointments
-                    WHERE date LIKE ? AND status='Completed'
-                    GROUP BY doctor_name ORDER BY SUM(fee) DESC""", (f"{month}%",))
+        c.execute("""SELECT doctor_name,
+                    COUNT(*) as total_appts,
+                    SUM(CASE WHEN status='Completed' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN status='Completed' THEN fee ELSE 0 END) as revenue
+                    FROM appointments WHERE date LIKE ?
+                    GROUP BY doctor_name ORDER BY revenue DESC""", (f"{month}%",))
         rows = c.fetchall()
         conn.close()
 
-        cols = ("Doctor", "Appointments", "Revenue")
-        tree = ttk.Treeview(d, columns=cols, show="headings", height=12)
-        for col, w in zip(cols, [250, 120, 150]):
-            tree.heading(col, text=col)
-            tree.column(col, width=w)
+        cols = ("Doctor", "Total Appts", "Completed", "Completion %", "Revenue")
+        tf, tree = self._scrollable_tree(d, cols, [200, 100, 100, 100, 150], height=12)
         for r in rows:
-            tree.insert("", "end", values=(r[0], r[1], f"Rs {r[2]:,.0f}"))
-        tree.pack(fill="both", expand=True, padx=20, pady=10)
+            pct = f"{(r[2]/r[1]*100):.0f}%" if r[1] > 0 else "0%"
+            tree.insert("", "end", values=(r[0], r[1], r[2], pct, f"Rs {r[3]:,.0f}"))
+        tf.pack(fill="both", expand=True, padx=20, pady=10)
 
     # ============================== APPOINTMENTS ==============================
 
@@ -1031,30 +1233,60 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=14, pady=4,
                   command=self._new_appointment, cursor="hand2").pack(side="right")
 
+        sf, self.appt_search, self.appt_filters = self._search_frame(
+            self.main, "Search patient or doctor...",
+            [("Status", ["Waiting", "In Progress", "Completed", "Cancelled"]),
+             ("Dept", self._get_departments())]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.appt_search.bind("<KeyRelease>", lambda e: self._load_appointments())
+        for fv in self.appt_filters.values():
+            fv.trace_add("write", lambda *a: self._load_appointments())
+
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("Token", "Patient", "Doctor", "Department", "Date", "Time", "Fee", "Status", "Billed")
-        self.appt_tree = ttk.Treeview(tf, columns=cols, show="headings", height=16)
-        for col, w in zip(cols, [50, 140, 130, 100, 85, 60, 75, 80, 50]):
-            self.appt_tree.heading(col, text=col)
-            self.appt_tree.column(col, width=w, minwidth=30)
+        self.appt_frame, self.appt_tree = self._scrollable_tree(tf, cols,
+            [50, 140, 130, 100, 85, 60, 75, 80, 50], height=16)
+        self.appt_frame.pack(fill="both", expand=True)
+        self.appt_tree.bind("<Double-1>", lambda e: self._update_appt_status())
+
+        tk.Label(tf, text="Double-click: Waiting -> In Progress -> Completed (auto-bill on completion)",
+                 bg=C["card"], fg=C["text_muted"], font=F["body_small"]).pack(side="bottom", pady=2)
+
+        self._load_appointments()
+
+    def _load_appointments(self):
+        search = self.appt_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.appt_tree.get_children():
+            self.appt_tree.delete(item)
 
         today = datetime.now().strftime("%Y-%m-%d")
         conn = get_conn()
         c = conn.cursor()
-        c.execute("""SELECT token_no, patient_name, doctor_name, department, date, time, fee, status, auto_billed
-                    FROM appointments WHERE date=? ORDER BY token_no""", (today,))
-        for r in c.fetchall():
-            billed = "Yes" if r[8] else "No"
-            self.appt_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], r[4], r[5], f"Rs {r[6]:,.0f}", r[7], billed))
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT token_no, patient_name, doctor_name, department, date, time, fee, status, auto_billed
+                        FROM appointments WHERE (patient_name LIKE ? OR doctor_name LIKE ?) ORDER BY date DESC, token_no""", (q, q))
+        else:
+            c.execute("""SELECT token_no, patient_name, doctor_name, department, date, time, fee, status, auto_billed
+                        FROM appointments WHERE date=? ORDER BY token_no""", (today,))
+        rows = c.fetchall()
         conn.close()
 
-        self.appt_tree.pack(fill="both", expand=True)
-        self.appt_tree.bind("<Double-1>", lambda e: self._update_appt_status())
+        status_f = self.appt_filters.get("Status", tk.StringVar()).get()
+        dept_f = self.appt_filters.get("Dept", tk.StringVar()).get()
 
-        tk.Label(tf, text="Double-click: Waiting → In Progress → Completed (auto-generates bill on completion)",
-                 bg=C["card"], fg=C["text_muted"], font=F["body_small"]).pack(pady=2)
+        for r in rows:
+            if "All" not in status_f and r[7] != status_f:
+                continue
+            if "All" not in dept_f and r[3] != dept_f:
+                continue
+            billed = "Yes" if r[8] else "No"
+            self.appt_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], r[4], r[5], f"Rs {r[6]:,.0f}", r[7], billed))
 
     def _new_appointment(self):
         d = tk.Toplevel(self.root)
@@ -1127,7 +1359,7 @@ class HospitalApp:
                          f"Token #{next_token} {pat_parts[1]} with {doc_info[1]}")
                 d.destroy()
                 self._show_appointments()
-                messagebox.showinfo("Booked", f"Token #{next_token}\n{pat_parts[1]} → Dr. {doc_info[1]}\nFee: Rs {doc_info[3]:,.0f}")
+                messagebox.showinfo("Booked", f"Token #{next_token}\n{pat_parts[1]} -> Dr. {doc_info[1]}\nFee: Rs {doc_info[3]:,.0f}")
             except Exception as ex:
                 messagebox.showerror("Error", str(ex))
             finally:
@@ -1157,7 +1389,6 @@ class HospitalApp:
             c.execute("UPDATE appointments SET status=? WHERE token_no=? AND date=?",
                      (new_status, token, today))
 
-            # Auto-billing on completion
             if new_status == "Completed":
                 c.execute("SELECT id, patient_id, patient_name, doctor_name, fee, auto_billed FROM appointments WHERE token_no=? AND date=?",
                          (token, today))
@@ -1183,7 +1414,7 @@ class HospitalApp:
     def _show_pharmacy(self):
         self._clear()
         self._set_active("pharma")
-        h = self._header("Pharmacy", "Inventory, Sales & Alerts")
+        h = self._header("Pharmacy", "Inventory, Sales & Expiry Alerts")
 
         btn_f = tk.Frame(h, bg=C["bg"])
         btn_f.pack(side="right")
@@ -1197,24 +1428,23 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=10, pady=4,
                   command=self._reorder_alerts, cursor="hand2").pack(side="left", padx=2)
 
-        sf = tk.Frame(self.main, bg=C["bg"])
+        sf, self.med_search, self.med_filters = self._search_frame(
+            self.main, "Search medicine name or generic...",
+            [("Category", ["Painkiller", "Antibiotic", "Cardiac", "Diabetes", "Other"]),
+             ("Stock", ["Low Stock", "In Stock", "Expired"])]
+        )
         sf.pack(fill="x", padx=25, pady=(0, 6))
-        self.med_search = tk.Entry(sf, bg=C["input_bg"], fg=C["text"], font=F["input"],
-                                    relief="flat", insertbackground=C["text"])
-        self.med_search.pack(side="left", fill="x", expand=True, ipady=5)
-        self.med_search.insert(0, "Search medicine...")
-        self.med_search.bind("<FocusIn>", lambda e: self.med_search.delete(0, "end") if "Search" in self.med_search.get() else None)
         self.med_search.bind("<KeyRelease>", lambda e: self._load_medicines())
+        for fv in self.med_filters.values():
+            fv.trace_add("write", lambda *a: self._load_medicines())
 
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
-        cols = ("ID", "Name", "Generic", "Category", "Price", "Cost", "Stock", "Min", "Expiry", "Supplier", "Status")
-        self.med_tree = ttk.Treeview(tf, columns=cols, show="headings", height=14)
-        for col, w in zip(cols, [35, 150, 110, 80, 65, 60, 50, 40, 80, 100, 60]):
-            self.med_tree.heading(col, text=col)
-            self.med_tree.column(col, width=w, minwidth=30)
-        self.med_tree.pack(fill="both", expand=True)
+        cols = ("ID", "Name", "Generic", "Category", "Price", "Cost", "Stock", "Min", "Expiry", "Days Left", "Supplier", "Status")
+        self.med_frame, self.med_tree = self._scrollable_tree(tf, cols,
+            [35, 140, 100, 80, 65, 55, 45, 35, 80, 60, 95, 65], height=14)
+        self.med_frame.pack(fill="both", expand=True)
         self._load_medicines()
 
     def _load_medicines(self):
@@ -1232,21 +1462,49 @@ class HospitalApp:
         else:
             c.execute("""SELECT id, name, generic_name, category, price, cost_price, stock, min_stock, expiry_date, supplier, status
                         FROM medicines ORDER BY name""")
+
         today = datetime.now().strftime("%Y-%m-%d")
+        stock_f = self.med_filters.get("Stock", tk.StringVar()).get()
+        cat_f = self.med_filters.get("Category", tk.StringVar()).get()
+
         for r in c.fetchall():
             status = r[10]
+            days_left = ""
+            if r[8]:
+                try:
+                    exp_dt = datetime.strptime(r[8], "%Y-%m-%d")
+                    dl = (exp_dt - datetime.now()).days
+                    days_left = f"{dl}d" if dl > 0 else "EXPIRED"
+                    if dl <= 0:
+                        status = "EXPIRED"
+                    elif dl <= 30:
+                        status = "EXPIRING"
+                except ValueError:
+                    pass
             if r[6] <= r[7]:
                 status = "LOW"
             if r[8] and r[8] <= today:
                 status = "EXPIRED"
+
+            # Apply filters
+            if "All" not in cat_f and r[3] != cat_f:
+                continue
+            if "All" not in stock_f:
+                if stock_f == "Low Stock" and r[6] > r[7]:
+                    continue
+                if stock_f == "In Stock" and r[6] <= r[7]:
+                    continue
+                if stock_f == "Expired" and status != "EXPIRED":
+                    continue
+
             self.med_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], f"Rs {r[4]:,.0f}",
-                                                     f"Rs {r[5]:,.0f}", r[6], r[7], r[8], r[9], status))
+                                                     f"Rs {r[5]:,.0f}", r[6], r[7], r[8], days_left, r[9], status))
         conn.close()
 
     def _add_medicine(self):
         d = tk.Toplevel(self.root)
         d.title("Add Medicine")
-        d.geometry("500x580")
+        d.geometry("500x600")
         d.configure(bg=C["bg"])
         d.transient(self.root)
         d.grab_set()
@@ -1254,8 +1512,14 @@ class HospitalApp:
         tk.Label(d, text="Add Medicine", bg=C["bg"], fg=C["primary"],
                  font=("Segoe UI", 15, "bold")).pack(pady=(12, 8))
 
-        form = tk.Frame(d, bg=C["bg"])
-        form.pack(fill="x", padx=25)
+        canvas = tk.Canvas(d, bg=C["bg"], highlightthickness=0)
+        scroll = ttk.Scrollbar(d, orient="vertical", command=canvas.yview)
+        form = tk.Frame(canvas, bg=C["bg"])
+        form.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=form, anchor="nw")
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side="left", fill="both", expand=True, padx=25)
+        scroll.pack(side="right", fill="y")
         form.grid_columnconfigure(1, weight=1)
 
         fields = {}
@@ -1331,14 +1595,17 @@ class HospitalApp:
 
         cols = ("Medicine", "Qty", "Price", "Total")
         cart_tree = ttk.Treeview(cart_f, columns=cols, show="headings", height=7)
+        sb = ttk.Scrollbar(cart_f, orient="vertical", command=cart_tree.yview)
+        cart_tree.configure(yscrollcommand=sb.set)
         for col, w in zip(cols, [240, 55, 95, 95]):
             cart_tree.heading(col, text=col)
             cart_tree.column(col, width=w)
-        cart_tree.pack(fill="both", expand=True)
+        cart_tree.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y")
 
-        total_lbl = tk.Label(cart_f, text="Total: Rs 0", bg=C["card"], fg=C["accent"],
+        total_lbl = tk.Label(d, text="Total: Rs 0", bg=C["bg"], fg=C["accent"],
                               font=("Segoe UI", 16, "bold"))
-        total_lbl.pack(anchor="e", pady=4)
+        total_lbl.pack(pady=2)
 
         conn = get_conn()
         c = conn.cursor()
@@ -1380,8 +1647,6 @@ class HospitalApp:
             if not cart_items:
                 messagebox.showwarning("Empty", "Add medicines!")
                 return
-
-            # Check interactions
             conn = get_conn()
             c = conn.cursor()
             groups = set()
@@ -1453,13 +1718,10 @@ class HospitalApp:
         conn.close()
 
         cols = ("Medicine", "Generic", "Stock", "Min", "Supplier", "Phone")
-        tree = ttk.Treeview(d, columns=cols, show="headings", height=12)
-        for col, w in zip(cols, [180, 130, 60, 50, 120, 100]):
-            tree.heading(col, text=col)
-            tree.column(col, width=w)
+        tf, tree = self._scrollable_tree(d, cols, [180, 130, 60, 50, 120, 100], height=12)
         for r in rows:
             tree.insert("", "end", values=r)
-        tree.pack(fill="both", expand=True, padx=20, pady=10)
+        tf.pack(fill="both", expand=True, padx=20, pady=10)
 
         if not rows:
             tk.Label(d, text="All medicines are adequately stocked!",
@@ -1476,22 +1738,37 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=14, pady=4,
                   command=self._new_prescription, cursor="hand2").pack(side="right")
 
+        sf, self.rx_search, _ = self._search_frame(self.main, "Search patient or doctor...")
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.rx_search.bind("<KeyRelease>", lambda e: self._load_prescriptions())
+
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("ID", "Patient", "Doctor", "Diagnosis", "Medicines", "Follow-up", "Date")
-        tree = ttk.Treeview(tf, columns=cols, show="headings", height=16)
-        for col, w in zip(cols, [35, 130, 130, 150, 200, 85, 85]):
-            tree.heading(col, text=col)
-            tree.column(col, width=w, minwidth=30)
+        self.rx_frame, self.rx_tree = self._scrollable_tree(tf, cols,
+            [35, 130, 130, 150, 200, 85, 85], height=16)
+        self.rx_frame.pack(fill="both", expand=True)
+        self._load_prescriptions()
+
+    def _load_prescriptions(self):
+        search = self.rx_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.rx_tree.get_children():
+            self.rx_tree.delete(item)
 
         conn = get_conn()
         c = conn.cursor()
-        c.execute("SELECT id, patient_name, doctor_name, diagnosis, medicines, follow_up, created_at FROM prescriptions ORDER BY id DESC")
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT id, patient_name, doctor_name, diagnosis, medicines, follow_up, created_at
+                        FROM prescriptions WHERE patient_name LIKE ? OR doctor_name LIKE ? ORDER BY id DESC""", (q, q))
+        else:
+            c.execute("SELECT id, patient_name, doctor_name, diagnosis, medicines, follow_up, created_at FROM prescriptions ORDER BY id DESC")
         for r in c.fetchall():
-            tree.insert("", "end", values=(r[0], r[1], r[2], r[3][:40], r[4][:50], r[5], r[6][:10]))
+            self.rx_tree.insert("", "end", values=(r[0], r[1], r[2], r[3][:40], r[4][:50], r[5], r[6][:10]))
         conn.close()
-        tree.pack(fill="both", expand=True)
 
     def _new_prescription(self):
         d = tk.Toplevel(self.root)
@@ -1593,27 +1870,58 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=14, pady=4,
                   command=self._request_lab_test, cursor="hand2").pack(side="right")
 
+        sf, self.lab_search, self.lab_filters = self._search_frame(
+            self.main, "Search patient or test name...",
+            [("Status", ["Pending", "Completed"]),
+             ("Category", ["Blood Test", "Urine Test", "X-Ray", "CT Scan", "MRI", "Ultrasound", "ECG"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.lab_search.bind("<KeyRelease>", lambda e: self._load_labs())
+        for fv in self.lab_filters.values():
+            fv.trace_add("write", lambda *a: self._load_labs())
+
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("Test ID", "Patient", "Doctor", "Test Name", "Category", "Fee", "Result", "Status", "Date")
-        self.lab_tree = ttk.Treeview(tf, columns=cols, show="headings", height=14)
-        for col, w in zip(cols, [70, 120, 110, 125, 85, 65, 90, 65, 80]):
-            self.lab_tree.heading(col, text=col)
-            self.lab_tree.column(col, width=w, minwidth=30)
-
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute("""SELECT test_id, patient_name, doctor_name, test_name, test_category, fee, result, status, created_at
-                    FROM lab_tests ORDER BY id DESC""")
-        for r in c.fetchall():
-            self.lab_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], r[4], f"Rs {r[5]:,.0f}", r[6][:25] or "-", r[7], r[8][:10]))
-        conn.close()
-        self.lab_tree.pack(fill="both", expand=True)
+        self.lab_frame, self.lab_tree = self._scrollable_tree(tf, cols,
+            [70, 120, 110, 125, 85, 65, 90, 65, 80], height=14)
+        self.lab_frame.pack(fill="both", expand=True)
         self.lab_tree.bind("<Double-1>", lambda e: self._update_lab_result())
 
         tk.Label(tf, text="Double-click to enter result", bg=C["card"],
-                 fg=C["text_muted"], font=F["body_small"]).pack(pady=2)
+                 fg=C["text_muted"], font=F["body_small"]).pack(side="bottom", pady=2)
+
+        self._load_labs()
+
+    def _load_labs(self):
+        search = self.lab_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.lab_tree.get_children():
+            self.lab_tree.delete(item)
+
+        conn = get_conn()
+        c = conn.cursor()
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT test_id, patient_name, doctor_name, test_name, test_category, fee, result, status, created_at
+                        FROM lab_tests WHERE patient_name LIKE ? OR test_name LIKE ? ORDER BY id DESC""", (q, q))
+        else:
+            c.execute("""SELECT test_id, patient_name, doctor_name, test_name, test_category, fee, result, status, created_at
+                        FROM lab_tests ORDER BY id DESC""")
+        rows = c.fetchall()
+        conn.close()
+
+        status_f = self.lab_filters.get("Status", tk.StringVar()).get()
+        cat_f = self.lab_filters.get("Category", tk.StringVar()).get()
+
+        for r in rows:
+            if "All" not in status_f and r[7] != status_f:
+                continue
+            if "All" not in cat_f and r[4] != cat_f:
+                continue
+            self.lab_tree.insert("", "end", values=(r[0], r[1], r[2], r[3], r[4], f"Rs {r[5]:,.0f}", r[6][:25] or "-", r[7], r[8][:10]))
 
     def _request_lab_test(self):
         d = tk.Toplevel(self.root)
@@ -1745,9 +2053,21 @@ class HospitalApp:
         self._set_active("beds")
         h = self._header("Bed Management", "Ward & Admission")
 
-        tk.Button(h, text="Admit Patient", bg=C["accent"], fg="black",
+        btn_f = tk.Frame(h, bg=C["bg"])
+        btn_f.pack(side="right")
+        tk.Button(btn_f, text="Admit Patient", bg=C["accent"], fg="black",
                   font=F["button"], relief="flat", padx=14, pady=4,
-                  command=self._admit_patient, cursor="hand2").pack(side="right")
+                  command=self._admit_patient, cursor="hand2").pack(side="left", padx=3)
+
+        sf, self.bed_search, self.bed_filters = self._search_frame(
+            self.main, "Search by bed no or patient...",
+            [("Status", ["Available", "Occupied"]),
+             ("Ward", ["General Ward A", "General Ward B", "Private Room", "Semi-Private", "ICU", "NICU", "Emergency Ward"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.bed_search.bind("<KeyRelease>", lambda e: self._load_beds())
+        for fv in self.bed_filters.values():
+            fv.trace_add("write", lambda *a: self._load_beds())
 
         # Ward cards
         conn = get_conn()
@@ -1762,9 +2082,9 @@ class HospitalApp:
         conn.close()
 
         wf = tk.Frame(self.main, bg=C["bg"])
-        wf.pack(fill="x", padx=25, pady=(0, 8))
+        wf.pack(fill="x", padx=25, pady=(0, 6))
         for i, w in enumerate(wards):
-            card = tk.Frame(wf, bg=C["card"], padx=10, pady=8)
+            card = tk.Frame(wf, bg=C["card"], padx=10, pady=6)
             card.grid(row=i // 4, column=i % 4, padx=3, pady=3, sticky="nsew")
             wf.grid_columnconfigure(i % 4, weight=1)
             avail = w[3] or 0
@@ -1781,22 +2101,42 @@ class HospitalApp:
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("Bed No", "Ward", "Status", "Patient", "Admission", "Doctor")
-        self.bed_tree = ttk.Treeview(tf, columns=cols, show="headings", height=10)
-        for col, w in zip(cols, [75, 130, 75, 140, 100, 120]):
-            self.bed_tree.heading(col, text=col)
-            self.bed_tree.column(col, width=w, minwidth=35)
-
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute("SELECT bed_no, ward_name, status, patient_name, admission_date, doctor_id FROM beds ORDER BY ward_name, bed_no")
-        for r in c.fetchall():
-            self.bed_tree.insert("", "end", values=(r[0], r[1], r[2], r[3] or "-", r[4] or "-", r[5] or "-"))
-        conn.close()
-        self.bed_tree.pack(fill="both", expand=True)
+        self.bed_frame, self.bed_tree = self._scrollable_tree(tf, cols,
+            [75, 130, 75, 140, 100, 120], height=10)
+        self.bed_frame.pack(fill="both", expand=True)
         self.bed_tree.bind("<Double-1>", lambda e: self._discharge_patient())
 
         tk.Label(tf, text="Double-click occupied bed to discharge", bg=C["card"],
-                 fg=C["text_muted"], font=F["body_small"]).pack(pady=2)
+                 fg=C["text_muted"], font=F["body_small"]).pack(side="bottom", pady=2)
+
+        self._load_beds()
+
+    def _load_beds(self):
+        search = self.bed_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.bed_tree.get_children():
+            self.bed_tree.delete(item)
+
+        conn = get_conn()
+        c = conn.cursor()
+        if search:
+            q = f"%{search}%"
+            c.execute("SELECT bed_no, ward_name, status, patient_name, admission_date, doctor_id FROM beds WHERE bed_no LIKE ? OR patient_name LIKE ? ORDER BY ward_name, bed_no", (q, q))
+        else:
+            c.execute("SELECT bed_no, ward_name, status, patient_name, admission_date, doctor_id FROM beds ORDER BY ward_name, bed_no")
+        rows = c.fetchall()
+        conn.close()
+
+        status_f = self.bed_filters.get("Status", tk.StringVar()).get()
+        ward_f = self.bed_filters.get("Ward", tk.StringVar()).get()
+
+        for r in rows:
+            if "All" not in status_f and r[2] != status_f:
+                continue
+            if "All" not in ward_f and r[1] != ward_f:
+                continue
+            self.bed_tree.insert("", "end", values=(r[0], r[1], r[2], r[3] or "-", r[4] or "-", r[5] or "-"))
 
     def _admit_patient(self):
         d = tk.Toplevel(self.root)
@@ -1822,17 +2162,17 @@ class HospitalApp:
         form = tk.Frame(d, bg=C["bg"])
         form.pack(fill="x", padx=25)
 
-        for label, var_name in [("Patient", "pat"), ("Available Bed", "bed"), ("Doctor", "doc")]:
-            tk.Label(form, text=label, bg=C["bg"], fg=C["text_secondary"]).pack(anchor="w", pady=(6, 2))
-
+        tk.Label(form, text="Patient", bg=C["bg"], fg=C["text_secondary"]).pack(anchor="w", pady=(6, 2))
         pat_var = tk.StringVar()
         ttk.Combobox(form, textvariable=pat_var,
                       values=[f"{p[0]} - {p[1]}" for p in patients], state="readonly").pack(fill="x", ipady=3)
 
+        tk.Label(form, text="Available Bed", bg=C["bg"], fg=C["text_secondary"]).pack(anchor="w", pady=(6, 2))
         bed_var = tk.StringVar()
         ttk.Combobox(form, textvariable=bed_var,
                       values=[f"{b[0]} ({b[1]})" for b in beds], state="readonly").pack(fill="x", ipady=3)
 
+        tk.Label(form, text="Doctor", bg=C["bg"], fg=C["text_secondary"]).pack(anchor="w", pady=(6, 2))
         doc_var = tk.StringVar()
         ttk.Combobox(form, textvariable=doc_var,
                       values=[f"{dd[0]} - {dd[1]}" for dd in doctors], state="readonly").pack(fill="x", ipady=3)
@@ -1852,7 +2192,7 @@ class HospitalApp:
                          (pat_parts[0], pat_parts[1], datetime.now().strftime("%Y-%m-%d"), doc_id, bed_no))
                 c.execute("UPDATE patients SET patient_type='IPD' WHERE patient_id=?", (pat_parts[0],))
                 conn.commit()
-                audit_log(self.user["username"], "Admit Patient", "Beds", f"{pat_parts[1]} → {bed_no}")
+                audit_log(self.user["username"], "Admit Patient", "Beds", f"{pat_parts[1]} -> {bed_no}")
                 add_notification("Patient Admitted", f"{pat_parts[1]} admitted to {bed_no}", "info")
                 d.destroy()
                 self._show_beds()
@@ -1895,25 +2235,56 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=14, pady=4,
                   command=self._create_bill, cursor="hand2").pack(side="right")
 
+        sf, self.bill_search, self.bill_filters = self._search_frame(
+            self.main, "Search by bill no or patient...",
+            [("Type", ["OPD", "IPD", "Emergency"]),
+             ("Payment", ["Paid", "Unpaid", "Partial"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.bill_search.bind("<KeyRelease>", lambda e: self._load_bills())
+        for fv in self.bill_filters.values():
+            fv.trace_add("write", lambda *a: self._load_bills())
+
         tf = tk.Frame(self.main, bg=C["card"])
         tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
 
         cols = ("Bill No", "Patient", "Type", "Consult", "Lab", "Pharma", "Bed", "Discount", "Total", "Paid", "Status")
-        tree = ttk.Treeview(tf, columns=cols, show="headings", height=16)
-        for col, w in zip(cols, [85, 120, 45, 70, 60, 65, 60, 60, 80, 70, 60]):
-            tree.heading(col, text=col)
-            tree.column(col, width=w, minwidth=30)
+        self.bill_frame, self.bill_tree = self._scrollable_tree(tf, cols,
+            [85, 120, 45, 70, 60, 65, 60, 60, 80, 70, 60], height=16)
+        self.bill_frame.pack(fill="both", expand=True)
+        self._load_bills()
+
+    def _load_bills(self):
+        search = self.bill_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.bill_tree.get_children():
+            self.bill_tree.delete(item)
 
         conn = get_conn()
         c = conn.cursor()
-        c.execute("""SELECT bill_no, patient_name, bill_type, consultation_fee, lab_charges, pharmacy_charges,
-                    bed_charges, discount, grand_total, paid, payment_status FROM bills ORDER BY id DESC""")
-        for r in c.fetchall():
-            tree.insert("", "end", values=(r[0], r[1], r[2], f"Rs {r[3]:,.0f}", f"Rs {r[4]:,.0f}",
-                                           f"Rs {r[5]:,.0f}", f"Rs {r[6]:,.0f}", f"Rs {r[7]:,.0f}",
-                                           f"Rs {r[8]:,.0f}", f"Rs {r[9]:,.0f}", r[10]))
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT bill_no, patient_name, bill_type, consultation_fee, lab_charges, pharmacy_charges,
+                        bed_charges, discount, grand_total, paid, payment_status FROM bills
+                        WHERE bill_no LIKE ? OR patient_name LIKE ? ORDER BY id DESC""", (q, q))
+        else:
+            c.execute("""SELECT bill_no, patient_name, bill_type, consultation_fee, lab_charges, pharmacy_charges,
+                        bed_charges, discount, grand_total, paid, payment_status FROM bills ORDER BY id DESC""")
+        rows = c.fetchall()
         conn.close()
-        tree.pack(fill="both", expand=True)
+
+        type_f = self.bill_filters.get("Type", tk.StringVar()).get()
+        pay_f = self.bill_filters.get("Payment", tk.StringVar()).get()
+
+        for r in rows:
+            if "All" not in type_f and r[2] != type_f:
+                continue
+            if "All" not in pay_f and r[10] != pay_f:
+                continue
+            self.bill_tree.insert("", "end", values=(r[0], r[1], r[2], f"Rs {r[3]:,.0f}", f"Rs {r[4]:,.0f}",
+                                                     f"Rs {r[5]:,.0f}", f"Rs {r[6]:,.0f}", f"Rs {r[7]:,.0f}",
+                                                     f"Rs {r[8]:,.0f}", f"Rs {r[9]:,.0f}", r[10]))
 
     def _create_bill(self):
         d = tk.Toplevel(self.root)
@@ -2001,6 +2372,492 @@ class HospitalApp:
                   font=F["button"], relief="flat", padx=20, pady=7,
                   command=save, cursor="hand2").pack(pady=10)
 
+    # ============================== EMERGENCY TRIAGE ==============================
+
+    def _show_triage(self):
+        self._clear()
+        self._set_active("triage")
+        h = self._header("Emergency Triage", "Priority-based Patient Assessment")
+
+        tk.Button(h, text="+ New Triage", bg=C["danger"], fg="white",
+                  font=F["button"], relief="flat", padx=14, pady=4,
+                  command=self._new_triage, cursor="hand2").pack(side="right")
+
+        sf, self.tri_search, self.tri_filters = self._search_frame(
+            self.main, "Search patient...",
+            [("Priority", ["Red", "Yellow", "Green"]),
+             ("Status", ["Waiting", "Being Treated", "Discharged"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.tri_search.bind("<KeyRelease>", lambda e: self._load_triage())
+        for fv in self.tri_filters.values():
+            fv.trace_add("write", lambda *a: self._load_triage())
+
+        # Priority legend
+        leg = tk.Frame(self.main, bg=C["bg"])
+        leg.pack(fill="x", padx=25, pady=(0, 4))
+        for txt, col in [("RED = Critical/Life-threatening", C["danger"]),
+                          ("YELLOW = Urgent/Serious", C["warning"]),
+                          ("GREEN = Routine/Non-urgent", C["success"])]:
+            tk.Label(leg, text=f"  {txt}  ", bg=col, fg="white" if col != C["warning"] else "black",
+                     font=("Segoe UI", 8, "bold")).pack(side="left", padx=3)
+
+        tf = tk.Frame(self.main, bg=C["card"])
+        tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
+
+        cols = ("ID", "Patient", "Priority", "Complaint", "BP", "Temp", "Pulse", "O2", "Arrival", "Doctor", "Status", "Time")
+        self.tri_frame, self.tri_tree = self._scrollable_tree(tf, cols,
+            [35, 120, 60, 140, 70, 50, 45, 45, 65, 100, 80, 80], height=14)
+        self.tri_frame.pack(fill="both", expand=True)
+        self.tri_tree.bind("<Double-1>", lambda e: self._update_triage_status())
+
+        tk.Label(tf, text="Double-click to update status", bg=C["card"],
+                 fg=C["text_muted"], font=F["body_small"]).pack(side="bottom", pady=2)
+
+        self._load_triage()
+
+    def _load_triage(self):
+        search = self.tri_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.tri_tree.get_children():
+            self.tri_tree.delete(item)
+
+        conn = get_conn()
+        c = conn.cursor()
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT id, patient_name, priority, chief_complaint, vital_bp, vital_temp, vital_pulse,
+                        vital_o2, arrival_mode, assigned_doctor, status, created_at
+                        FROM triage WHERE patient_name LIKE ? ORDER BY
+                        CASE priority WHEN 'Red' THEN 1 WHEN 'Yellow' THEN 2 ELSE 3 END, id DESC""", (q,))
+        else:
+            c.execute("""SELECT id, patient_name, priority, chief_complaint, vital_bp, vital_temp, vital_pulse,
+                        vital_o2, arrival_mode, assigned_doctor, status, created_at
+                        FROM triage ORDER BY
+                        CASE priority WHEN 'Red' THEN 1 WHEN 'Yellow' THEN 2 ELSE 3 END, id DESC""")
+        rows = c.fetchall()
+        conn.close()
+
+        pri_f = self.tri_filters.get("Priority", tk.StringVar()).get()
+        stat_f = self.tri_filters.get("Status", tk.StringVar()).get()
+
+        for r in rows:
+            if "All" not in pri_f and r[2] != pri_f:
+                continue
+            if "All" not in stat_f and r[10] != stat_f:
+                continue
+            self.tri_tree.insert("", "end", values=(
+                r[0], r[1], r[2], r[3][:30], r[4] or "-",
+                f"{r[5]:.1f}" if r[5] else "-", r[6] or "-",
+                f"{r[7]:.0f}%" if r[7] else "-", r[8], r[9] or "-", r[10], r[11][:16]))
+
+    def _new_triage(self):
+        d = tk.Toplevel(self.root)
+        d.title("Emergency Triage Assessment")
+        d.geometry("520x580")
+        d.configure(bg=C["bg"])
+        d.transient(self.root)
+        d.grab_set()
+
+        tk.Label(d, text="Emergency Triage", bg=C["bg"], fg=C["danger"],
+                 font=("Segoe UI", 16, "bold")).pack(pady=(12, 8))
+
+        conn = get_conn()
+        c = conn.cursor()
+        c.execute("SELECT patient_id, name FROM patients WHERE status='Active' ORDER BY name")
+        patients = c.fetchall()
+        c.execute("SELECT doctor_id, name FROM doctors WHERE status='Active' ORDER BY name")
+        doctors = c.fetchall()
+        conn.close()
+
+        form = tk.Frame(d, bg=C["bg"])
+        form.pack(fill="x", padx=25)
+
+        tk.Label(form, text="Patient", bg=C["bg"], fg=C["text_secondary"]).pack(anchor="w", pady=(4, 2))
+        pat_var = tk.StringVar()
+        ttk.Combobox(form, textvariable=pat_var,
+                      values=[f"{p[0]} - {p[1]}" for p in patients], state="readonly").pack(fill="x", ipady=3)
+
+        tk.Label(form, text="Priority Level", bg=C["bg"], fg=C["text_secondary"]).pack(anchor="w", pady=(6, 2))
+        pri_var = tk.StringVar(value="Yellow")
+        pri_f = tk.Frame(form, bg=C["bg"])
+        pri_f.pack(fill="x")
+        for p, col in [("Red", C["danger"]), ("Yellow", C["warning"]), ("Green", C["success"])]:
+            tk.Radiobutton(pri_f, text=f"  {p}  ", variable=pri_var, value=p, bg=C["bg"],
+                           fg=col, selectcolor=C["input_bg"], font=("Segoe UI", 11, "bold"),
+                           activebackground=C["bg"]).pack(side="left", padx=10)
+
+        form2 = tk.Frame(d, bg=C["bg"])
+        form2.pack(fill="x", padx=25)
+        form2.grid_columnconfigure(1, weight=1)
+
+        fields = {}
+        for label, key, default, row in [
+            ("Chief Complaint *", "complaint", "", 0),
+            ("Blood Pressure", "bp", "", 1),
+            ("Temperature (F)", "temp", "", 2),
+            ("Pulse (bpm)", "pulse", "", 3),
+            ("Oxygen Level (%)", "o2", "", 4),
+        ]:
+            fields[key] = self._make_entry(form2, label, default, row)
+
+        tk.Label(form2, text="Arrival Mode", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=5, column=0, sticky="w", padx=5, pady=(6, 2))
+        arr_var = tk.StringVar(value="Walk-in")
+        ttk.Combobox(form2, textvariable=arr_var, values=["Walk-in", "Ambulance", "Referred", "Police"],
+                      state="readonly").grid(row=5, column=1, sticky="ew", padx=5)
+
+        tk.Label(form2, text="Assign Doctor", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=6, column=0, sticky="w", padx=5, pady=(6, 2))
+        doc_var = tk.StringVar()
+        ttk.Combobox(form2, textvariable=doc_var,
+                      values=[f"{dd[1]}" for dd in doctors],
+                      state="readonly").grid(row=6, column=1, sticky="ew", padx=5)
+
+        def save():
+            if not pat_var.get() or not fields["complaint"].get().strip():
+                messagebox.showerror("Error", "Patient and complaint required!")
+                return
+            pat_parts = pat_var.get().split(" - ")
+            conn = get_conn()
+            try:
+                c = conn.cursor()
+                c.execute("""INSERT INTO triage (patient_id, patient_name, priority, chief_complaint,
+                            vital_bp, vital_temp, vital_pulse, vital_o2, arrival_mode, assigned_doctor, created_by)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                         (pat_parts[0], pat_parts[1], pri_var.get(), fields["complaint"].get(),
+                          fields["bp"].get(), float(fields["temp"].get() or 0),
+                          int(fields["pulse"].get() or 0), float(fields["o2"].get() or 0),
+                          arr_var.get(), doc_var.get(), self.user["name"]))
+                conn.commit()
+                audit_log(self.user["username"], "New Triage", "Triage",
+                         f"{pri_var.get()} - {pat_parts[1]}")
+                add_notification(f"ER Triage: {pri_var.get()}", f"{pat_parts[1]} - {fields['complaint'].get()[:40]}",
+                                "danger" if pri_var.get() == "Red" else "warning")
+                d.destroy()
+                self._show_triage()
+            except Exception as ex:
+                messagebox.showerror("Error", str(ex))
+            finally:
+                conn.close()
+
+        tk.Button(d, text="Submit Triage", bg=C["danger"], fg="white",
+                  font=F["button"], relief="flat", padx=20, pady=7,
+                  command=save, cursor="hand2").pack(pady=10)
+
+    def _update_triage_status(self):
+        sel = self.tri_tree.selection()
+        if not sel:
+            return
+        vals = self.tri_tree.item(sel[0])["values"]
+        tid, current = vals[0], vals[10]
+        flow = {"Waiting": "Being Treated", "Being Treated": "Discharged"}
+        new_status = flow.get(current, current)
+        if new_status == current:
+            return
+        conn = get_conn()
+        try:
+            c = conn.cursor()
+            c.execute("UPDATE triage SET status=? WHERE id=?", (new_status, tid))
+            conn.commit()
+            self._show_triage()
+        finally:
+            conn.close()
+
+    # ============================== INSURANCE CLAIMS ==============================
+
+    def _show_insurance(self):
+        self._clear()
+        self._set_active("insurance")
+        h = self._header("Insurance Claims", "Claim Tracking & Management")
+
+        tk.Button(h, text="+ New Claim", bg=C["accent"], fg="black",
+                  font=F["button"], relief="flat", padx=14, pady=4,
+                  command=self._new_claim, cursor="hand2").pack(side="right")
+
+        sf, self.ins_search, self.ins_filters = self._search_frame(
+            self.main, "Search by claim ID, patient, or company...",
+            [("Status", ["Submitted", "Under Review", "Approved", "Rejected", "Paid"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.ins_search.bind("<KeyRelease>", lambda e: self._load_claims())
+        for fv in self.ins_filters.values():
+            fv.trace_add("write", lambda *a: self._load_claims())
+
+        tf = tk.Frame(self.main, bg=C["card"])
+        tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
+
+        cols = ("Claim ID", "Patient", "Company", "Policy #", "Amount", "Approved", "Bill", "Status", "Submitted", "Notes")
+        self.ins_frame, self.ins_tree = self._scrollable_tree(tf, cols,
+            [80, 120, 120, 90, 80, 80, 80, 80, 80, 120], height=14)
+        self.ins_frame.pack(fill="both", expand=True)
+        self.ins_tree.bind("<Double-1>", lambda e: self._update_claim_status())
+
+        tk.Label(tf, text="Double-click to update claim status", bg=C["card"],
+                 fg=C["text_muted"], font=F["body_small"]).pack(side="bottom", pady=2)
+
+        self._load_claims()
+
+    def _load_claims(self):
+        search = self.ins_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.ins_tree.get_children():
+            self.ins_tree.delete(item)
+
+        conn = get_conn()
+        c = conn.cursor()
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT claim_id, patient_name, insurance_company, policy_number, claim_amount,
+                        approved_amount, bill_no, status, submitted_date, notes
+                        FROM insurance_claims WHERE claim_id LIKE ? OR patient_name LIKE ? OR insurance_company LIKE ?
+                        ORDER BY id DESC""", (q, q, q))
+        else:
+            c.execute("""SELECT claim_id, patient_name, insurance_company, policy_number, claim_amount,
+                        approved_amount, bill_no, status, submitted_date, notes
+                        FROM insurance_claims ORDER BY id DESC""")
+        rows = c.fetchall()
+        conn.close()
+
+        stat_f = self.ins_filters.get("Status", tk.StringVar()).get()
+        for r in rows:
+            if "All" not in stat_f and r[7] != stat_f:
+                continue
+            self.ins_tree.insert("", "end", values=(
+                r[0], r[1], r[2], r[3], f"Rs {r[4]:,.0f}", f"Rs {r[5]:,.0f}",
+                r[6] or "-", r[7], r[8] or "-", r[9][:25] or "-"))
+
+    def _new_claim(self):
+        d = tk.Toplevel(self.root)
+        d.title("New Insurance Claim")
+        d.geometry("520x520")
+        d.configure(bg=C["bg"])
+        d.transient(self.root)
+        d.grab_set()
+
+        tk.Label(d, text="Submit Insurance Claim", bg=C["bg"], fg=C["primary"],
+                 font=("Segoe UI", 15, "bold")).pack(pady=(12, 8))
+
+        conn = get_conn()
+        c = conn.cursor()
+        c.execute("SELECT patient_id, name FROM patients WHERE status='Active'")
+        patients = c.fetchall()
+        c.execute("SELECT bill_no, patient_name, grand_total FROM bills ORDER BY id DESC LIMIT 50")
+        bills = c.fetchall()
+        conn.close()
+
+        form = tk.Frame(d, bg=C["bg"])
+        form.pack(fill="x", padx=25)
+        form.grid_columnconfigure(1, weight=1)
+
+        tk.Label(form, text="Patient", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=0, column=0, sticky="w", padx=5, pady=(6, 2))
+        pat_var = tk.StringVar()
+        ttk.Combobox(form, textvariable=pat_var,
+                      values=[f"{p[0]} - {p[1]}" for p in patients],
+                      state="readonly").grid(row=0, column=1, sticky="ew", padx=5)
+
+        fields = {}
+        for label, key, default, row in [
+            ("Insurance Company *", "company", "", 1),
+            ("Policy Number", "policy", "", 2),
+            ("Claim Amount (Rs)", "amount", "0", 3),
+            ("Diagnosis", "diagnosis", "", 4),
+        ]:
+            fields[key] = self._make_entry(form, label, default, row)
+
+        tk.Label(form, text="Related Bill", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=5, column=0, sticky="w", padx=5, pady=(6, 2))
+        bill_var = tk.StringVar()
+        ttk.Combobox(form, textvariable=bill_var,
+                      values=[f"{b[0]} - {b[1]} (Rs {b[2]:,.0f})" for b in bills],
+                      state="readonly").grid(row=5, column=1, sticky="ew", padx=5)
+
+        tk.Label(form, text="Notes", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=6, column=0, sticky="nw", padx=5, pady=(6, 2))
+        notes = tk.Text(form, bg=C["input_bg"], fg=C["text"], font=F["input"], height=3, relief="flat")
+        notes.grid(row=6, column=1, sticky="ew", padx=5)
+
+        def save():
+            if not pat_var.get() or not fields["company"].get().strip():
+                messagebox.showerror("Error", "Patient and insurance company required!")
+                return
+            claim_id = generate_id("CLM", "insurance_claims", "claim_id")
+            pat_parts = pat_var.get().split(" - ")
+            bill_no = bill_var.get().split(" - ")[0] if bill_var.get() else ""
+            conn = get_conn()
+            try:
+                c = conn.cursor()
+                c.execute("""INSERT INTO insurance_claims (claim_id, patient_id, patient_name, insurance_company,
+                            policy_number, claim_amount, bill_no, diagnosis, submitted_date, notes, created_by)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                         (claim_id, pat_parts[0], pat_parts[1], fields["company"].get(),
+                          fields["policy"].get(), float(fields["amount"].get() or 0),
+                          bill_no, fields["diagnosis"].get(),
+                          datetime.now().strftime("%Y-%m-%d"), notes.get("1.0", "end").strip(),
+                          self.user["name"]))
+                conn.commit()
+                audit_log(self.user["username"], "New Claim", "Insurance", f"{claim_id} {pat_parts[1]}")
+                d.destroy()
+                self._show_insurance()
+            except Exception as ex:
+                messagebox.showerror("Error", str(ex))
+            finally:
+                conn.close()
+
+        tk.Button(d, text="Submit Claim", bg=C["accent"], fg="black",
+                  font=F["button"], relief="flat", padx=20, pady=7,
+                  command=save, cursor="hand2").pack(pady=10)
+
+    def _update_claim_status(self):
+        sel = self.ins_tree.selection()
+        if not sel:
+            return
+        vals = self.ins_tree.item(sel[0])["values"]
+        claim_id, current = vals[0], vals[7]
+        flow = {"Submitted": "Under Review", "Under Review": "Approved", "Approved": "Paid"}
+        new_status = flow.get(current, current)
+        if new_status == current:
+            return
+        conn = get_conn()
+        try:
+            c = conn.cursor()
+            if new_status == "Approved":
+                c.execute("UPDATE insurance_claims SET status=?, approved_date=?, approved_amount=claim_amount WHERE claim_id=?",
+                         (new_status, datetime.now().strftime("%Y-%m-%d"), claim_id))
+            else:
+                c.execute("UPDATE insurance_claims SET status=? WHERE claim_id=?", (new_status, claim_id))
+            conn.commit()
+            self._show_insurance()
+        finally:
+            conn.close()
+
+    # ============================== SHIFT SCHEDULING ==============================
+
+    def _show_shifts(self):
+        self._clear()
+        self._set_active("shifts")
+        h = self._header("Shift Schedule", "Doctor & Staff Scheduling")
+
+        tk.Button(h, text="+ Add Shift", bg=C["accent"], fg="black",
+                  font=F["button"], relief="flat", padx=14, pady=4,
+                  command=self._add_shift, cursor="hand2").pack(side="right")
+
+        sf, self.shift_search, self.shift_filters = self._search_frame(
+            self.main, "Search by staff name...",
+            [("Shift", ["Morning", "Evening", "Night"]),
+             ("Role", ["Doctor", "Nurse", "Technician", "Staff"])]
+        )
+        sf.pack(fill="x", padx=25, pady=(0, 6))
+        self.shift_search.bind("<KeyRelease>", lambda e: self._load_shifts())
+        for fv in self.shift_filters.values():
+            fv.trace_add("write", lambda *a: self._load_shifts())
+
+        tf = tk.Frame(self.main, bg=C["card"])
+        tf.pack(fill="both", expand=True, padx=25, pady=(0, 15))
+
+        cols = ("ID", "Staff Name", "Role", "Department", "Date", "Shift", "Start", "End", "Status")
+        self.shift_frame, self.shift_tree = self._scrollable_tree(tf, cols,
+            [35, 140, 80, 110, 85, 70, 60, 60, 75], height=14)
+        self.shift_frame.pack(fill="both", expand=True)
+        self._load_shifts()
+
+    def _load_shifts(self):
+        search = self.shift_search.get().strip()
+        if "Search" in search:
+            search = ""
+        for item in self.shift_tree.get_children():
+            self.shift_tree.delete(item)
+
+        conn = get_conn()
+        c = conn.cursor()
+        if search:
+            q = f"%{search}%"
+            c.execute("""SELECT id, staff_name, staff_role, department, shift_date, shift_type, start_time, end_time, status
+                        FROM shifts WHERE staff_name LIKE ? ORDER BY shift_date DESC, start_time""", (q,))
+        else:
+            c.execute("""SELECT id, staff_name, staff_role, department, shift_date, shift_type, start_time, end_time, status
+                        FROM shifts ORDER BY shift_date DESC, start_time""")
+        rows = c.fetchall()
+        conn.close()
+
+        shift_f = self.shift_filters.get("Shift", tk.StringVar()).get()
+        role_f = self.shift_filters.get("Role", tk.StringVar()).get()
+
+        for r in rows:
+            if "All" not in shift_f and r[5] != shift_f:
+                continue
+            if "All" not in role_f and r[2] != role_f:
+                continue
+            self.shift_tree.insert("", "end", values=r)
+
+    def _add_shift(self):
+        d = tk.Toplevel(self.root)
+        d.title("Add Shift")
+        d.geometry("480x450")
+        d.configure(bg=C["bg"])
+        d.transient(self.root)
+        d.grab_set()
+
+        tk.Label(d, text="Schedule Shift", bg=C["bg"], fg=C["primary"],
+                 font=("Segoe UI", 15, "bold")).pack(pady=(12, 8))
+
+        form = tk.Frame(d, bg=C["bg"])
+        form.pack(fill="x", padx=25)
+        form.grid_columnconfigure(1, weight=1)
+
+        fields = {}
+        fields["name"] = self._make_entry(form, "Staff Name *", "", 0)
+        fields["date"] = self._make_entry(form, "Date (YYYY-MM-DD)", datetime.now().strftime("%Y-%m-%d"), 1)
+
+        tk.Label(form, text="Role", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=2, column=0, sticky="w", padx=5, pady=(6, 2))
+        role_var = tk.StringVar(value="Doctor")
+        ttk.Combobox(form, textvariable=role_var, values=["Doctor", "Nurse", "Technician", "Staff"],
+                      state="readonly").grid(row=2, column=1, sticky="ew", padx=5)
+
+        tk.Label(form, text="Department", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=3, column=0, sticky="w", padx=5, pady=(6, 2))
+        dept_var = tk.StringVar()
+        ttk.Combobox(form, textvariable=dept_var, values=self._get_departments(),
+                      state="readonly").grid(row=3, column=1, sticky="ew", padx=5)
+
+        tk.Label(form, text="Shift Type", bg=C["bg"], fg=C["text_secondary"],
+                 font=F["body_small"]).grid(row=4, column=0, sticky="w", padx=5, pady=(6, 2))
+        shift_var = tk.StringVar(value="Morning")
+        ttk.Combobox(form, textvariable=shift_var, values=["Morning", "Evening", "Night"],
+                      state="readonly").grid(row=4, column=1, sticky="ew", padx=5)
+
+        fields["start"] = self._make_entry(form, "Start Time", "08:00", 5)
+        fields["end"] = self._make_entry(form, "End Time", "16:00", 6)
+
+        def save():
+            name = fields["name"].get().strip()
+            if not name:
+                messagebox.showerror("Error", "Staff name required!")
+                return
+            conn = get_conn()
+            try:
+                c = conn.cursor()
+                c.execute("""INSERT INTO shifts (staff_name, staff_role, department, shift_date, shift_type, start_time, end_time, created_by)
+                            VALUES (?,?,?,?,?,?,?,?)""",
+                         (name, role_var.get(), dept_var.get(), fields["date"].get(),
+                          shift_var.get(), fields["start"].get(), fields["end"].get(), self.user["name"]))
+                conn.commit()
+                audit_log(self.user["username"], "Add Shift", "Shifts", f"{name} - {fields['date'].get()}")
+                d.destroy()
+                self._show_shifts()
+            except Exception as ex:
+                messagebox.showerror("Error", str(ex))
+            finally:
+                conn.close()
+
+        tk.Button(d, text="Save Shift", bg=C["accent"], fg="black",
+                  font=F["button"], relief="flat", padx=20, pady=7,
+                  command=save, cursor="hand2").pack(pady=10)
+
     # ============================== CALENDAR ==============================
 
     def _show_calendar(self):
@@ -2018,7 +2875,6 @@ class HospitalApp:
         tk.Label(cal_f, text=f"{month_name} {year}", bg=C["card"], fg=C["primary"],
                  font=("Segoe UI", 18, "bold")).pack(pady=(0, 10))
 
-        # Day headers
         grid = tk.Frame(cal_f, bg=C["card"])
         grid.pack(fill="both", expand=True)
         for i in range(7):
@@ -2029,7 +2885,6 @@ class HospitalApp:
             tk.Label(grid, text=day, bg=C["card"], fg=C["primary"],
                      font=("Segoe UI", 10, "bold")).grid(row=0, column=i, pady=5)
 
-        # Get appointment counts
         conn = get_conn()
         c = conn.cursor()
         c.execute("""SELECT date, COUNT(*) FROM appointments
@@ -2037,9 +2892,8 @@ class HospitalApp:
         appt_counts = {r[0]: r[1] for r in c.fetchall()}
         conn.close()
 
-        # Calendar days
-        cal = calendar.monthcalendar(year, month)
-        for row_idx, week in enumerate(cal, 1):
+        cal_data = calendar.monthcalendar(year, month)
+        for row_idx, week in enumerate(cal_data, 1):
             for col_idx, day in enumerate(week):
                 if day == 0:
                     tk.Label(grid, text="", bg=C["card"]).grid(row=row_idx, column=col_idx)
@@ -2085,7 +2939,6 @@ class HospitalApp:
         conn = get_conn()
         c = conn.cursor()
 
-        # 7-day revenue
         dates, revenues = [], []
         for i in range(6, -1, -1):
             date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
@@ -2096,20 +2949,16 @@ class HospitalApp:
             revenues.append(br + pr)
             dates.append((datetime.now() - timedelta(days=i)).strftime("%d/%m"))
 
-        # Department
         c.execute("SELECT department, COUNT(*) FROM appointments GROUP BY department ORDER BY COUNT(*) DESC LIMIT 6")
         dept_data = c.fetchall()
 
-        # Payment
         c.execute("SELECT payment_method, COUNT(*) FROM bills GROUP BY payment_method")
         pay_data = c.fetchall()
 
-        # Doctor revenue
         month = datetime.now().strftime("%Y-%m")
         c.execute("""SELECT doctor_name, SUM(fee) FROM appointments WHERE date LIKE ? AND status='Completed'
                     GROUP BY doctor_name ORDER BY SUM(fee) DESC LIMIT 5""", (f"{month}%",))
         doc_rev = c.fetchall()
-
         conn.close()
 
         fig = Figure(figsize=(11, 5), facecolor=C["bg"])
@@ -2179,8 +3028,8 @@ class HospitalApp:
         stats.append(("Pharmacy Sales", f"Rs {c.fetchone()[0]:,.0f}"))
         c.execute("SELECT COUNT(*) FROM lab_tests WHERE created_at LIKE ?", (f"{today}%",))
         stats.append(("Lab Tests", c.fetchone()[0]))
-        c.execute("SELECT COUNT(*) FROM prescriptions WHERE created_at LIKE ?", (f"{today}%",))
-        stats.append(("Prescriptions", c.fetchone()[0]))
+        c.execute("SELECT COUNT(*) FROM triage WHERE created_at LIKE ?", (f"{today}%",))
+        stats.append(("ER Triage Cases", c.fetchone()[0]))
         conn.close()
 
         for label, val in stats:
@@ -2224,8 +3073,12 @@ class HospitalApp:
              ["Bill No", "Patient", "Type", "Consult", "Lab", "Pharma", "Bed", "Total", "Paid", "Status"]),
             ("Lab Tests", "SELECT test_id, patient_name, doctor_name, test_name, test_category, fee, result, status, created_at FROM lab_tests",
              ["ID", "Patient", "Doctor", "Test", "Category", "Fee", "Result", "Status", "Date"]),
-            ("Vitals", "SELECT patient_name, blood_pressure, temperature, pulse, weight, blood_sugar, oxygen_level, recorded_by, created_at FROM patient_vitals",
-             ["Patient", "BP", "Temp", "Pulse", "Weight", "Sugar", "O2", "Recorded By", "Date"]),
+            ("Triage", "SELECT id, patient_name, priority, chief_complaint, arrival_mode, assigned_doctor, status, created_at FROM triage",
+             ["ID", "Patient", "Priority", "Complaint", "Arrival", "Doctor", "Status", "Date"]),
+            ("Insurance", "SELECT claim_id, patient_name, insurance_company, claim_amount, approved_amount, status, submitted_date FROM insurance_claims",
+             ["Claim ID", "Patient", "Company", "Amount", "Approved", "Status", "Submitted"]),
+            ("Shifts", "SELECT staff_name, staff_role, department, shift_date, shift_type, start_time, end_time, status FROM shifts",
+             ["Name", "Role", "Dept", "Date", "Shift", "Start", "End", "Status"]),
             ("Audit Log", "SELECT user, action, module, details, created_at FROM audit_log ORDER BY id DESC LIMIT 500",
              ["User", "Action", "Module", "Details", "Date"]),
         ]:
@@ -2303,12 +3156,18 @@ class HospitalApp:
         self._set_active("settings")
         h = self._header("Settings", "Admin Panel")
 
-        content = tk.Frame(self.main, bg=C["bg"])
-        content.pack(fill="both", expand=True, padx=25, pady=(0, 15))
+        canvas = tk.Canvas(self.main, bg=C["bg"], highlightthickness=0)
+        scroll = ttk.Scrollbar(self.main, orient="vertical", command=canvas.yview)
+        content = tk.Frame(canvas, bg=C["bg"])
+        content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=content, anchor="nw")
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="right", fill="y")
 
         # User management
         user_f = tk.Frame(content, bg=C["card"], padx=15, pady=12)
-        user_f.pack(fill="x", pady=(0, 10))
+        user_f.pack(fill="x", padx=25, pady=(0, 10))
         tk.Label(user_f, text="User Management", bg=C["card"], fg=C["text"],
                  font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(0, 8))
 
@@ -2323,17 +3182,14 @@ class HospitalApp:
         conn.close()
 
         cols = ("Username", "Name", "Role", "Status", "Last Login")
-        tree = ttk.Treeview(user_f, columns=cols, show="headings", height=5)
-        for col, w in zip(cols, [100, 150, 100, 80, 140]):
-            tree.heading(col, text=col)
-            tree.column(col, width=w)
+        uf, tree = self._scrollable_tree(user_f, cols, [100, 150, 100, 80, 140], height=5)
         for u in users:
             tree.insert("", "end", values=u)
-        tree.pack(fill="x", pady=5)
+        uf.pack(fill="x", pady=5)
 
         # Backup/Restore
         bk_f = tk.Frame(content, bg=C["card"], padx=15, pady=12)
-        bk_f.pack(fill="x", pady=(0, 10))
+        bk_f.pack(fill="x", padx=25, pady=(0, 10))
         tk.Label(bk_f, text="Database Backup & Restore", bg=C["card"], fg=C["text"],
                  font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(0, 8))
 
@@ -2348,7 +3204,7 @@ class HospitalApp:
 
         # Audit log
         audit_f = tk.Frame(content, bg=C["card"], padx=15, pady=12)
-        audit_f.pack(fill="both", expand=True)
+        audit_f.pack(fill="x", padx=25, pady=(0, 10))
         tk.Label(audit_f, text="Recent Audit Log", bg=C["card"], fg=C["text"],
                  font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(0, 8))
 
@@ -2359,13 +3215,10 @@ class HospitalApp:
         conn.close()
 
         cols = ("User", "Action", "Module", "Details", "Time")
-        log_tree = ttk.Treeview(audit_f, columns=cols, show="headings", height=6)
-        for col, w in zip(cols, [80, 120, 80, 200, 130]):
-            log_tree.heading(col, text=col)
-            log_tree.column(col, width=w)
+        lf, log_tree = self._scrollable_tree(audit_f, cols, [80, 120, 80, 200, 130], height=6)
         for l in logs:
             log_tree.insert("", "end", values=l)
-        log_tree.pack(fill="both", expand=True)
+        lf.pack(fill="x")
 
     def _add_user(self):
         d = tk.Toplevel(self.root)
