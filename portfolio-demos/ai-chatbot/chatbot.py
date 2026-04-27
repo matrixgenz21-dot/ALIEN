@@ -19,6 +19,7 @@ from tkinter import scrolledtext
 from datetime import datetime
 import json
 import os
+import re
 import threading
 
 # Try to import AI library
@@ -220,7 +221,7 @@ class ChatbotGUI:
     def _get_fallback_response(self, text):
         text_lower = text.lower()
         for keyword, response in FALLBACK_RESPONSES.items():
-            if keyword != "default" and keyword in text_lower.split():
+            if keyword != "default" and re.search(r'\b' + re.escape(keyword) + r'\b', text_lower):
                 return response
         return FALLBACK_RESPONSES["default"]
 

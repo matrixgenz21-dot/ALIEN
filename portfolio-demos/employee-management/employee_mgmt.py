@@ -388,8 +388,8 @@ class EmployeeApp:
             if not name or not eid:
                 messagebox.showerror("Error", "Employee ID and Name required!")
                 return
+            conn = sqlite3.connect(DB_FILE)
             try:
-                conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
                 c.execute("""INSERT INTO employees (emp_id, name, email, phone, department, designation, join_date, basic_salary, allowances)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -397,7 +397,6 @@ class EmployeeApp:
                           fields["designation"].get(), fields["join_date"].get(),
                           float(fields["basic_salary"].get() or 0), float(fields["allowances"].get() or 0)))
                 conn.commit()
-                conn.close()
                 d.destroy()
                 self._load_employees()
                 messagebox.showinfo("Success", f"Employee '{name}' added!")
@@ -405,6 +404,8 @@ class EmployeeApp:
                 messagebox.showerror("Error", "Employee ID already exists!")
             except Exception as ex:
                 messagebox.showerror("Error", str(ex))
+            finally:
+                conn.close()
 
         tk.Button(d, text="Save Employee", bg=C["success"], fg="white",
                   font=("Segoe UI", 11, "bold"), relief="flat", padx=18, pady=6,
@@ -467,8 +468,8 @@ class EmployeeApp:
                       state="readonly").pack(fill="x", ipady=2)
 
         def save():
+            conn = sqlite3.connect(DB_FILE)
             try:
-                conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
                 c.execute("""UPDATE employees SET name=?, email=?, phone=?, department=?, designation=?,
                             join_date=?, basic_salary=?, allowances=?, status=? WHERE emp_id=?""",
@@ -477,21 +478,24 @@ class EmployeeApp:
                           float(fields["basic_salary"].get() or 0), float(fields["allowances"].get() or 0),
                           status_var.get(), eid))
                 conn.commit()
-                conn.close()
                 d.destroy()
                 self._load_employees()
             except Exception as ex:
                 messagebox.showerror("Error", str(ex))
+            finally:
+                conn.close()
 
         def delete():
             if messagebox.askyesno("Confirm", f"Delete employee {emp[2]}?"):
                 conn = sqlite3.connect(DB_FILE)
-                c = conn.cursor()
-                c.execute("DELETE FROM employees WHERE emp_id=?", (eid,))
-                conn.commit()
-                conn.close()
-                d.destroy()
-                self._load_employees()
+                try:
+                    c = conn.cursor()
+                    c.execute("DELETE FROM employees WHERE emp_id=?", (eid,))
+                    conn.commit()
+                    d.destroy()
+                    self._load_employees()
+                finally:
+                    conn.close()
 
         bf = tk.Frame(d, bg=C["bg"])
         bf.pack(pady=12)
@@ -590,14 +594,16 @@ class EmployeeApp:
                     hours = round((t2 - t1).seconds / 3600, 1)
 
                 conn = sqlite3.connect(DB_FILE)
-                c = conn.cursor()
-                c.execute("""INSERT OR REPLACE INTO attendance (emp_id, date, check_in, check_out, status, hours)
-                            VALUES (?, ?, ?, ?, ?, ?)""",
-                         (eid, date_entry.get(), ci, co, status_var.get(), hours))
-                conn.commit()
-                conn.close()
-                d.destroy()
-                self._show_attendance()
+                try:
+                    c = conn.cursor()
+                    c.execute("""INSERT OR REPLACE INTO attendance (emp_id, date, check_in, check_out, status, hours)
+                                VALUES (?, ?, ?, ?, ?, ?)""",
+                             (eid, date_entry.get(), ci, co, status_var.get(), hours))
+                    conn.commit()
+                    d.destroy()
+                    self._show_attendance()
+                finally:
+                    conn.close()
             except Exception as ex:
                 messagebox.showerror("Error", str(ex))
 
@@ -693,14 +699,16 @@ class EmployeeApp:
                 days = (e_date - s).days + 1
 
                 conn = sqlite3.connect(DB_FILE)
-                c = conn.cursor()
-                c.execute("""INSERT INTO leaves (emp_id, emp_name, leave_type, start_date, end_date, days, reason)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                         (eid, ename, type_var.get(), start.get(), end.get(), days, reason.get()))
-                conn.commit()
-                conn.close()
-                d.destroy()
-                self._show_leaves()
+                try:
+                    c = conn.cursor()
+                    c.execute("""INSERT INTO leaves (emp_id, emp_name, leave_type, start_date, end_date, days, reason)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                             (eid, ename, type_var.get(), start.get(), end.get(), days, reason.get()))
+                    conn.commit()
+                    d.destroy()
+                    self._show_leaves()
+                finally:
+                    conn.close()
             except Exception as ex:
                 messagebox.showerror("Error", str(ex))
 
@@ -852,16 +860,17 @@ class EmployeeApp:
             name = name_entry.get().strip()
             if not name:
                 return
+            conn = sqlite3.connect(DB_FILE)
             try:
-                conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
                 c.execute("INSERT INTO departments (name) VALUES (?)", (name,))
                 conn.commit()
-                conn.close()
                 d.destroy()
                 self._show_departments()
             except sqlite3.IntegrityError:
                 messagebox.showerror("Error", "Department already exists!")
+            finally:
+                conn.close()
 
         tk.Button(d, text="Save", bg=C["success"], fg="white", font=("Segoe UI", 11, "bold"),
                   relief="flat", padx=18, pady=6, command=save, cursor="hand2").pack(pady=12)
