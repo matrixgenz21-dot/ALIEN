@@ -699,6 +699,9 @@ class EmployeeApp:
             try:
                 s = datetime.strptime(start.get(), "%Y-%m-%d")
                 e_date = datetime.strptime(end.get(), "%Y-%m-%d")
+                if e_date < s:
+                    messagebox.showerror("Error", "End date must be on or after start date!")
+                    return
                 days = (e_date - s).days + 1
 
                 conn = sqlite3.connect(DB_FILE)

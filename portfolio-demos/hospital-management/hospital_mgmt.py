@@ -138,7 +138,10 @@ class HospitalApp:
         self.root.title(f"HMS V3 - {user['name']} ({user['role']})")
         self.root.geometry("1280x760")
         self.root.configure(bg=C["bg"])
-        self.root.state("zoomed") if hasattr(self.root, 'state') else None
+        try:
+            self.root.state("zoomed")
+        except tk.TclError:
+            self.root.attributes("-zoomed", True)
 
         self._setup_styles()
         self._create_sidebar()
