@@ -218,19 +218,21 @@ def main():
     target = os.getcwd()
     undo_mode = False
 
+    preview_mode = False
+
     for i, arg in enumerate(sys.argv[1:], 1):
         if arg == "--undo":
             undo_mode = True
         elif arg == "--preview":
-            organizer = FileOrganizer(target)
-            organizer.show_preview()
-            return
+            preview_mode = True
         elif not arg.startswith("--"):
             target = arg
 
     organizer = FileOrganizer(target)
 
-    if undo_mode:
+    if preview_mode:
+        organizer.show_preview()
+    elif undo_mode:
         organizer.undo()
     else:
         organizer.organize()

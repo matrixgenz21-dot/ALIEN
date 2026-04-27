@@ -20,6 +20,7 @@ import os
 import re
 import json
 from datetime import datetime
+from urllib.parse import urljoin
 
 try:
     import requests
@@ -105,10 +106,8 @@ class WebScraper:
     def _extract_links(self, soup, base_url):
         links = []
         for a in soup.find_all("a", href=True):
-            href = a["href"]
+            href = urljoin(base_url, a["href"])
             text = a.get_text(strip=True) or "No Text"
-            if href.startswith("/"):
-                href = base_url.rstrip("/") + href
             if href.startswith("http"):
                 links.append({"text": text[:100], "url": href})
         return links
@@ -116,10 +115,8 @@ class WebScraper:
     def _extract_images(self, soup, base_url):
         images = []
         for img in soup.find_all("img", src=True):
-            src = img["src"]
+            src = urljoin(base_url, img["src"])
             alt = img.get("alt", "No Alt Text")
-            if src.startswith("/"):
-                src = base_url.rstrip("/") + src
             images.append({"alt": alt[:100], "src": src})
         return images
 
