@@ -591,7 +591,10 @@ class EmployeeApp:
                 if ci and co:
                     t1 = datetime.strptime(ci, "%H:%M")
                     t2 = datetime.strptime(co, "%H:%M")
-                    hours = round((t2 - t1).total_seconds() / 3600, 1)
+                    diff = (t2 - t1).total_seconds()
+                    if diff < 0:
+                        diff += 24 * 3600
+                    hours = round(diff / 3600, 1)
 
                 conn = sqlite3.connect(DB_FILE)
                 try:
