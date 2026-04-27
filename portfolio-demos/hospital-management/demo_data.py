@@ -6,7 +6,7 @@ Creates realistic demo data for showcasing the system.
 import sqlite3
 import random
 from datetime import datetime, timedelta
-from database import get_conn, init_db, generate_id
+from database import get_conn, init_db, generate_id, audit_log, add_notification
 
 # Pakistani names for realistic data
 MALE_NAMES = [
@@ -58,33 +58,38 @@ DOCTOR_SPECS = [
     ("Dr. Ayesha Tariq", "MBBS, DMRD (Radiology)", "Radiology", 2000),
 ]
 
+# (name, generic, category, manufacturer, price, cost, stock, supplier, supplier_phone, interaction_group)
 MEDICINES = [
-    ("Panadol 500mg", "Paracetamol", "Pain Relief", "GSK Pakistan", 25, 15, 500),
-    ("Augmentin 625mg", "Amoxicillin/Clavulanate", "Antibiotic", "GSK Pakistan", 120, 80, 200),
-    ("Flagyl 400mg", "Metronidazole", "Antibiotic", "Sanofi Pakistan", 35, 20, 350),
-    ("Brufen 400mg", "Ibuprofen", "Pain Relief", "Abbott Pakistan", 30, 18, 400),
-    ("Omeprazole 20mg", "Omeprazole", "Gastric", "Getz Pharma", 45, 25, 300),
-    ("Amlodipine 5mg", "Amlodipine", "Cardiac", "Searle Pakistan", 55, 30, 250),
-    ("Metformin 500mg", "Metformin", "Diabetes", "Getz Pharma", 40, 22, 600),
-    ("Atorvastatin 20mg", "Atorvastatin", "Cholesterol", "Hilton Pharma", 75, 45, 180),
-    ("Ceftriaxone 1g Inj", "Ceftriaxone", "Antibiotic", "Sami Pharma", 250, 150, 100),
-    ("Insulin Mixtard", "Insulin Human", "Diabetes", "Novo Nordisk", 1200, 900, 50),
-    ("Losartan 50mg", "Losartan", "Cardiac", "Searle Pakistan", 65, 35, 200),
-    ("Diclofenac 50mg", "Diclofenac", "Pain Relief", "Novartis Pakistan", 20, 12, 450),
-    ("Ciprofloxacin 500mg", "Ciprofloxacin", "Antibiotic", "Searle Pakistan", 50, 28, 300),
-    ("Azithromycin 500mg", "Azithromycin", "Antibiotic", "Getz Pharma", 80, 45, 200),
-    ("Ranitidine 150mg", "Ranitidine", "Gastric", "GSK Pakistan", 35, 18, 400),
-    ("Montelukast 10mg", "Montelukast", "Respiratory", "Getz Pharma", 60, 35, 150),
-    ("Cetirizine 10mg", "Cetirizine", "Allergy", "GSK Pakistan", 20, 10, 500),
-    ("Prednisolone 5mg", "Prednisolone", "Steroid", "Sanofi Pakistan", 15, 8, 300),
-    ("Amoxicillin 500mg", "Amoxicillin", "Antibiotic", "GSK Pakistan", 40, 22, 400),
-    ("Aspirin 75mg", "Aspirin", "Cardiac", "Bayer Pakistan", 15, 8, 800),
-    ("Enalapril 5mg", "Enalapril", "Cardiac", "Getz Pharma", 45, 25, 200),
-    ("Glimepiride 2mg", "Glimepiride", "Diabetes", "Sanofi Pakistan", 50, 28, 250),
-    ("Pantoprazole 40mg", "Pantoprazole", "Gastric", "Hilton Pharma", 55, 30, 350),
-    ("Vitamin D3 200000IU", "Cholecalciferol", "Vitamin", "Sami Pharma", 300, 180, 100),
-    ("Multivitamins", "Multivitamins", "Vitamin", "Abbott Pakistan", 150, 90, 200),
+    ("Panadol 500mg", "Paracetamol", "Pain Relief", "GSK Pakistan", 25, 15, 500, "Medic Distributors", "042-37654321", ""),
+    ("Augmentin 625mg", "Amoxicillin/Clavulanate", "Antibiotic", "GSK Pakistan", 120, 80, 200, "Medic Distributors", "042-37654321", "Antibiotic"),
+    ("Flagyl 400mg", "Metronidazole", "Antibiotic", "Sanofi Pakistan", 35, 20, 350, "Al-Shifa Pharma", "042-36543210", "Antibiotic"),
+    ("Brufen 400mg", "Ibuprofen", "Pain Relief", "Abbott Pakistan", 30, 18, 400, "Medicare Supplies", "042-35432109", "NSAID"),
+    ("Omeprazole 20mg", "Omeprazole", "Gastric", "Getz Pharma", 45, 25, 300, "Health First Dist.", "042-34321098", ""),
+    ("Amlodipine 5mg", "Amlodipine", "Cardiac", "Searle Pakistan", 55, 30, 250, "Cardio Suppliers", "042-33210987", ""),
+    ("Metformin 500mg", "Metformin", "Diabetes", "Getz Pharma", 40, 22, 600, "Health First Dist.", "042-34321098", "Metformin"),
+    ("Atorvastatin 20mg", "Atorvastatin", "Cholesterol", "Hilton Pharma", 75, 45, 180, "Prime Pharma", "042-32109876", "Statin"),
+    ("Ceftriaxone 1g Inj", "Ceftriaxone", "Antibiotic", "Sami Pharma", 250, 150, 100, "Sami Distributors", "042-31098765", "Antibiotic"),
+    ("Insulin Mixtard", "Insulin Human", "Diabetes", "Novo Nordisk", 1200, 900, 50, "Novo Nordisk Pak", "042-30987654", ""),
+    ("Losartan 50mg", "Losartan", "Cardiac", "Searle Pakistan", 65, 35, 200, "Cardio Suppliers", "042-33210987", ""),
+    ("Diclofenac 50mg", "Diclofenac", "Pain Relief", "Novartis Pakistan", 20, 12, 450, "Medicare Supplies", "042-35432109", "NSAID"),
+    ("Ciprofloxacin 500mg", "Ciprofloxacin", "Antibiotic", "Searle Pakistan", 50, 28, 300, "Al-Shifa Pharma", "042-36543210", "Antibiotic"),
+    ("Azithromycin 500mg", "Azithromycin", "Antibiotic", "Getz Pharma", 80, 45, 200, "Health First Dist.", "042-34321098", "Antibiotic"),
+    ("Ranitidine 150mg", "Ranitidine", "Gastric", "GSK Pakistan", 35, 18, 400, "Medic Distributors", "042-37654321", ""),
+    ("Montelukast 10mg", "Montelukast", "Respiratory", "Getz Pharma", 60, 35, 150, "Health First Dist.", "042-34321098", ""),
+    ("Cetirizine 10mg", "Cetirizine", "Allergy", "GSK Pakistan", 20, 10, 500, "Medic Distributors", "042-37654321", ""),
+    ("Prednisolone 5mg", "Prednisolone", "Steroid", "Sanofi Pakistan", 15, 8, 300, "Al-Shifa Pharma", "042-36543210", ""),
+    ("Amoxicillin 500mg", "Amoxicillin", "Antibiotic", "GSK Pakistan", 40, 22, 400, "Medic Distributors", "042-37654321", "Antibiotic"),
+    ("Aspirin 75mg", "Aspirin", "Cardiac", "Bayer Pakistan", 15, 8, 800, "Prime Pharma", "042-32109876", "Blood Thinner"),
+    ("Enalapril 5mg", "Enalapril", "Cardiac", "Getz Pharma", 45, 25, 200, "Cardio Suppliers", "042-33210987", "ACE Inhibitor"),
+    ("Glimepiride 2mg", "Glimepiride", "Diabetes", "Sanofi Pakistan", 50, 28, 250, "Al-Shifa Pharma", "042-36543210", ""),
+    ("Pantoprazole 40mg", "Pantoprazole", "Gastric", "Hilton Pharma", 55, 30, 350, "Prime Pharma", "042-32109876", ""),
+    ("Vitamin D3 200000IU", "Cholecalciferol", "Vitamin", "Sami Pharma", 300, 180, 100, "Sami Distributors", "042-31098765", ""),
+    ("Multivitamins", "Multivitamins", "Vitamin", "Abbott Pakistan", 150, 90, 200, "Medicare Supplies", "042-35432109", ""),
+    ("Warfarin 5mg", "Warfarin", "Cardiac", "Sanofi Pakistan", 30, 18, 150, "Al-Shifa Pharma", "042-36543210", "Blood Thinner"),
 ]
+
+ALLERGIES = ["", "", "", "", "", "Penicillin", "Sulfa drugs", "Aspirin", "NSAIDs", "Latex"]
+CHRONIC_CONDITIONS = ["", "", "", "", "", "Diabetes", "Hypertension", "Asthma", "Diabetes, Hypertension", "Arthritis"]
 
 LAB_TESTS = [
     ("Complete Blood Count (CBC)", "Blood Test", 800),
@@ -145,9 +150,11 @@ def generate_demo_data():
         father = random.choice(FATHER_NAMES)
         addr = random.choice(ADDRESSES)
 
-        c.execute("""INSERT OR IGNORE INTO patients (patient_id, name, father_name, cnic, age, gender, phone, blood_group, patient_type, address)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                 (pid, name, father, cnic, age, gender, phone, blood, ptype, addr))
+        allergy = random.choice(ALLERGIES)
+        chronic = random.choice(CHRONIC_CONDITIONS)
+        c.execute("""INSERT OR IGNORE INTO patients (patient_id, name, father_name, cnic, age, gender, phone, blood_group, patient_type, address, allergies, chronic_conditions)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (pid, name, father, cnic, age, gender, phone, blood, ptype, addr, allergy, chronic))
 
     # Add appointments (last 7 days)
     for day_offset in range(7):
@@ -167,15 +174,19 @@ def generate_demo_data():
                      (token, pat_id, pat, doc_id, doc_name, dept, date, time_str, fee, status))
 
     # Add medicines
-    for name, generic, cat, mfg, price, cost, stock in MEDICINES:
+    for med in MEDICINES:
+        name, generic, cat, mfg, price, cost, stock = med[0], med[1], med[2], med[3], med[4], med[5], med[6]
+        supplier = med[7] if len(med) > 7 else ""
+        sup_phone = med[8] if len(med) > 8 else ""
+        interaction = med[9] if len(med) > 9 else ""
         batch = f"B{random.randint(1000, 9999)}"
         shelf = f"{random.choice('ABCDEFGH')}-{random.randint(1, 20)}"
         expiry = (datetime.now() + timedelta(days=random.randint(30, 730))).strftime("%Y-%m-%d")
         min_stock = random.choice([10, 20, 30, 50])
 
-        c.execute("""INSERT OR IGNORE INTO medicines (name, generic_name, category, manufacturer, batch_no, price, cost_price, stock, min_stock, expiry_date, shelf_location)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                 (name, generic, cat, mfg, batch, price, cost, stock, min_stock, expiry, shelf))
+        c.execute("""INSERT OR IGNORE INTO medicines (name, generic_name, category, manufacturer, batch_no, price, cost_price, stock, min_stock, expiry_date, shelf_location, supplier, supplier_phone, interaction_group)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (name, generic, cat, mfg, batch, price, cost, stock, min_stock, expiry, shelf, supplier, sup_phone, interaction))
 
     # Add pharmacy sales
     for day_offset in range(7):
@@ -287,6 +298,33 @@ def generate_demo_data():
         c.execute("""UPDATE beds SET status='Occupied', patient_id=?, patient_name=?,
                     admission_date=?, doctor_id=? WHERE bed_no=?""",
                  (pid, pname, adm_date, doc_id, bed_no))
+
+    # Add patient vitals
+    for i in range(30):
+        pat = random.choice(all_names)
+        pat_id = f"PAT-{all_names.index(pat) + 1:05d}"
+        bp_sys = random.randint(100, 160)
+        bp_dia = random.randint(60, 100)
+        temp = round(random.uniform(97.0, 102.0), 1)
+        pulse = random.randint(60, 110)
+        weight = round(random.uniform(40.0, 110.0), 1)
+        height = round(random.uniform(140.0, 185.0), 1)
+        sugar = round(random.uniform(70.0, 250.0), 0)
+        o2 = random.randint(92, 100)
+        resp = random.randint(14, 24)
+        date = (datetime.now() - timedelta(days=random.randint(0, 14))).strftime("%Y-%m-%d %H:%M:%S")
+        recorder = random.choice(["Dr. Ahmad Raza", "Dr. Sana Fatima", "Nurse Fatima", "Nurse Hira"])
+
+        c.execute("""INSERT INTO patient_vitals (patient_id, patient_name, blood_pressure, temperature, pulse,
+                    weight, height, blood_sugar, oxygen_level, respiratory_rate, recorded_by, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (pat_id, pat, f"{bp_sys}/{bp_dia}", temp, pulse, weight, height, sugar, o2, resp, recorder, date))
+
+    # Add some notifications inline
+    c.execute("INSERT INTO notifications (title, message, category) VALUES (?,?,?)",
+             ("System Started", "HMS initialized with demo data", "info"))
+    c.execute("INSERT INTO notifications (title, message, category) VALUES (?,?,?)",
+             ("Welcome", "Hospital Management System V2 is ready!", "success"))
 
     conn.commit()
     conn.close()
