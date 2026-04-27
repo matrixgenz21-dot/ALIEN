@@ -1,0 +1,9 @@
+# Voice Controller Bot - Required Python Packages
+# Install karo: pip install -r requirements.txt
+
+SpeechRecognition>=3.10.0    # Awaz sun ke text banata hai
+PyAudio>=0.2.14              # Microphone access ke liye
+pyautogui>=0.9.54            # Mouse aur keyboard control
+pyttsx3>=2.90                # Bot bolta hai (text-to-speech)
+pyperclip>=1.8.2             # Clipboard operations (copy/paste unicode)
+groq>=0.4.0                  # Groq AI - kuch bhi bolo, samjhe ga
